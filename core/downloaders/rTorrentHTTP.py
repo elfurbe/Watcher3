@@ -70,7 +70,7 @@ def add_torrent(data):
     try:
         downloadid = Torrent.get_hash(data['torrentfile'])
 
-'''        if conf['addpaused']:
+        ''' if conf['addpaused']:
             client.load(data['torrentfile'])
         else:
             client.load.start(data['torrentfile']) '''
