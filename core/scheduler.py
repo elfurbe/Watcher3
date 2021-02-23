@@ -381,7 +381,7 @@ class FinishedTorrentsCheck(object):
                 downloader = getattr(downloaders, client)
                 for torrent in downloader.get_torrents_status(stalled_for=config.get('removestalledfor'), progress=progress):
                     progress_update = None
-                    logging.info('Torrent status {} [{}] ({})'.format(torrent['hash'], torrent['status'], torrent['name']))
+                    logging.info('Torrent status {} [{}] ({}); removetorrents: {}'.format(torrent['hash'], torrent['status'], torrent['name'], config.get('removetorrents')))
                     if torrent['status'] == 'finished' and config.get('removetorrents'):
                         logging.info('Check if we know finished torrent {} and is postprocessed ({})'.format(torrent['hash'], torrent['name']))
                         if core.sql.row_exists('MARKEDRESULTS', guid=str(torrent['hash']), status='Finished'):
