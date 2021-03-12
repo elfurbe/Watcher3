@@ -164,7 +164,7 @@ def get_torrents_status(stalled_for=None, progress={}):
         fields = ['id', 'hashString', 'isFinished', 'isStalled', 'status', 'percentDone', 'name', 'downloadedEver']
         for torrent in client.get_torrents(arguments=fields):
             data = {'hash': torrent._fields['hashString'].value, 'status': torrent.status, 'name': torrent._get_name_string(), 'progress': torrent._fields['downloadedEver'].value}
-            if torrent.status == 'stopped' and torrent._fields['isFinished'].value:
+            if torrent._fields['isFinished'].value:
                 data['status'] = 'finished'
             elif torrent.status == 'downloading' and stalled_for and data['hash'] in progress:
                 torrent_progress = progress[data['hash']]
