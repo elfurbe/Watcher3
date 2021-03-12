@@ -52,7 +52,10 @@ def score(releases, imdbid=None, imported=False):
         check_size = False
         movie_details = {}
         filters = {'requiredwords': '', 'preferredwords': '', 'ignoredwords': ''}
-        quality = import_quality()
+   
+        quality = core.CONFIG['Quality']['Profiles'][core.config.default_profile()]
+        #quality = import_quality()
+   
         category = {'requiredwords': '', 'preferredwords': '', 'ignoredwords': ''}
     else:
         movie_details = core.sql.get_movie_details('imdbid', imdbid)
@@ -63,10 +66,7 @@ def score(releases, imdbid=None, imported=False):
         year = movie_details.get('year')
         title = movie_details.get('title').lower()
 
-        if quality_profile in core.CONFIG['Quality']['Profiles']:
-            quality = core.CONFIG['Quality']['Profiles'][quality_profile]
-        else:
-            quality = core.CONFIG['Quality']['Profiles'][core.config.default_profile()]
+        quality = core.CONFIG['Quality']['Profiles'][core.config.default_profile()]
 
         if category_name in core.CONFIG['Categories']:
             category = core.CONFIG['Categories'][category_name]
