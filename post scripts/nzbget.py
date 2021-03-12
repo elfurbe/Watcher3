@@ -82,7 +82,7 @@ url = u'{}/postprocessing/'.format(watcheraddress)
 post_data = urlencode(data).encode('ascii')
 
 request = request(url, post_data, headers={'User-Agent': 'Mozilla/5.0'})
-response = json.loads(urlopen(request, timeout=600, context=ctx).read().decode('utf-8'))
+response = json.loads(urlopen(request, timeout=1800, context=ctx).read().decode('utf-8'))
 
 if response.get('status') == 'finished':
     sys.exit(POSTPROCESS_SUCCESS)
