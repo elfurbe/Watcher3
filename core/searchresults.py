@@ -379,6 +379,9 @@ def score_year(releases, year):
             if abs(year - r['ptn']['year']) > 1:
                 reject += 1
                 r['reject_reason'] = 'Year mismatch'
+        else:
+            logging.debug('No year mismatch found')
+            continue
 
     return releases
 
