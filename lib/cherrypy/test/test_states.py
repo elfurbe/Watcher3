@@ -1,15 +1,15 @@
 import os
 import signal
-import socket
-import sys
 import time
-import unittest
-import warnings
+from http.client import BadStatusLine
+
+import pytest
+import portend
 
 import cherrypy
 import cherrypy.process.servers
-from cherrypy._cpcompat import BadStatusLine, ntob
 from cherrypy.test import helper
+
 
 engine = cherrypy.engine
 thisdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
@@ -47,6 +47,7 @@ class Dependency:
     def stopthread(self, thread_id):
         del self.threads[thread_id]
 
+
 db_connection = Dependency(engine)
 
 
@@ -66,23 +67,9 @@ def setup_server():
             engine.graceful()
             return 'app was (gracefully) restarted succesfully'
 
-        @cherrypy.expose
-        def block_explicit(self):
-            while True:
-                if cherrypy.response.timed_out:
-                    cherrypy.response.timed_out = False
-                    return 'broken!'
-                time.sleep(0.01)
-
-        @cherrypy.expose
-        def block_implicit(self):
-            time.sleep(0.5)
-            return 'response.timeout = %s' % cherrypy.response.timeout
-
     cherrypy.tree.mount(Root())
     cherrypy.config.update({
         'environment': 'test_suite',
-        'engine.timeout_monitor.frequency': 0.1,
     })
 
     db_connection.subscribe()
@@ -110,7 +97,7 @@ class ServerStateTests(helper.CPWebCase):
 
         host = cherrypy.server.socket_host
         port = cherrypy.server.socket_port
-        self.assertRaises(IOError, cherrypy._cpserver.check_port, host, port)
+        portend.occupied(host, port, timeout=0.1)
 
         # The db_connection should be running now
         self.assertEqual(db_connection.running, True)
@@ -233,37 +220,12 @@ class ServerStateTests(helper.CPWebCase):
         self.assertEqual(db_connection.running, False)
         self.assertEqual(len(db_connection.threads), 0)
 
-    def test_3_Deadlocks(self):
-        cherrypy.config.update({'response.timeout': 0.2})
-
-        engine.start()
-        cherrypy.server.start()
-        try:
-            self.assertNotEqual(engine.timeout_monitor.thread, None)
-
-            # Request a "normal" page.
-            self.assertEqual(engine.timeout_monitor.servings, [])
-            self.getPage('/')
-            self.assertBody('Hello World')
-            # request.close is called async.
-            while engine.timeout_monitor.servings:
-                sys.stdout.write('.')
-                time.sleep(0.01)
-
-            # Request a page that explicitly checks itself for deadlock.
-            # The deadlock_timeout should be 2 secs.
-            self.getPage('/block_explicit')
-            self.assertBody('broken!')
-
-            # Request a page that implicitly breaks deadlock.
-            # If we deadlock, we want to touch as little code as possible,
-            # so we won't even call handle_error, just bail ASAP.
-            self.getPage('/block_implicit')
-            self.assertStatus(500)
-            self.assertInBody('raise cherrypy.TimeoutError()')
-        finally:
-            engine.exit()
-
+    @pytest.mark.xfail(
+        'sys.platform == "Darwin" '
+        'and sys.version_info > (3, 7) '
+        'and os.environ["TRAVIS"]',
+        reason='https://github.com/cherrypy/cherrypy/issues/1693',
+    )
     def test_4_Autoreload(self):
         # If test_3 has not been executed, the server won't be stopped,
         # so we'll have to do it.
@@ -288,7 +250,7 @@ class ServerStateTests(helper.CPWebCase):
             time.sleep(2)
             host = cherrypy.server.socket_host
             port = cherrypy.server.socket_port
-            cherrypy._cpserver.wait_for_occupied_port(host, port)
+            portend.occupied(host, port, timeout=5)
 
             self.getPage('/start')
             if not (float(self.body) > start):
@@ -462,66 +424,49 @@ test_case_name: "test_signal_handler_unsubscribe"
         p.join()
 
         # Assert the old handler ran.
-        target_line = open(p.error_log, 'rb').readlines()[-10]
-        if not ntob('I am an old SIGTERM handler.') in target_line:
-            self.fail('Old SIGTERM handler did not run.\n%r' % target_line)
+        with open(p.error_log, 'rb') as f:
+            log_lines = list(f)
+            assert any(
+                line.endswith(b'I am an old SIGTERM handler.\n')
+                for line in log_lines
+            )
 
 
-class WaitTests(unittest.TestCase):
+def test_safe_wait_INADDR_ANY():  # pylint: disable=invalid-name
+    """
+    Wait on INADDR_ANY should not raise IOError
 
-    def test_wait_for_occupied_port_INADDR_ANY(self):
-        """
-        Wait on INADDR_ANY should not raise IOError
+    In cases where the loopback interface does not exist, CherryPy cannot
+    effectively determine if a port binding to INADDR_ANY was effected.
+    In this situation, CherryPy should assume that it failed to detect
+    the binding (not that the binding failed) and only warn that it could
+    not verify it.
+    """
+    # At such a time that CherryPy can reliably determine one or more
+    #  viable IP addresses of the host, this test may be removed.
 
-        In cases where the loopback interface does not exist, CherryPy cannot
-        effectively determine if a port binding to INADDR_ANY was effected.
-        In this situation, CherryPy should assume that it failed to detect
-        the binding (not that the binding failed) and only warn that it could
-        not verify it.
-        """
-        # At such a time that CherryPy can reliably determine one or more
-        #  viable IP addresses of the host, this test may be removed.
+    # Simulate the behavior we observe when no loopback interface is
+    #  present by: finding a port that's not occupied, then wait on it.
 
-        # Simulate the behavior we observe when no loopback interface is
-        #  present by: finding a port that's not occupied, then wait on it.
+    free_port = portend.find_available_local_port()
 
-        free_port = self.find_free_port()
+    servers = cherrypy.process.servers
 
-        servers = cherrypy.process.servers
+    inaddr_any = '0.0.0.0'
 
-        def with_shorter_timeouts(func):
-            """
-            A context where occupied_port_timeout is much smaller to speed
-            test runs.
-            """
-            # When we have Python 2.5, simplify using the with_statement.
-            orig_timeout = servers.occupied_port_timeout
-            servers.occupied_port_timeout = .07
-            try:
-                func()
-            finally:
-                servers.occupied_port_timeout = orig_timeout
+    # Wait on the free port that's unbound
+    with pytest.warns(
+            UserWarning,
+            match='Unable to verify that the server is bound on ',
+    ) as warnings:
+        # pylint: disable=protected-access
+        with servers._safe_wait(inaddr_any, free_port):
+            portend.occupied(inaddr_any, free_port, timeout=1)
+    assert len(warnings) == 1
 
-        def do_waiting():
-            # Wait on the free port that's unbound
-            with warnings.catch_warnings(record=True) as w:
-                servers.wait_for_occupied_port('0.0.0.0', free_port)
-                self.assertEqual(len(w), 1)
-                self.assertTrue(isinstance(w[0], warnings.WarningMessage))
-                self.assertTrue(
-                    'Unable to verify that the server is bound on ' in str(w[0]))
-
-            # The wait should still raise an IO error if INADDR_ANY was
-            #  not supplied.
-            self.assertRaises(IOError, servers.wait_for_occupied_port,
-                              '127.0.0.1', free_port)
-
-        with_shorter_timeouts(do_waiting)
-
-    def find_free_port(self):
-        'Find a free port by binding to port 0 then unbinding.'
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(('', 0))
-        free_port = sock.getsockname()[1]
-        sock.close()
-        return free_port
+    # The wait should still raise an IO error if INADDR_ANY was
+    #  not supplied.
+    with pytest.raises(IOError):
+        # pylint: disable=protected-access
+        with servers._safe_wait('127.0.0.1', free_port):
+            portend.occupied('127.0.0.1', free_port, timeout=1)

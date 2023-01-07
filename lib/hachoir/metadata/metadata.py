@@ -70,8 +70,8 @@ class Metadata(Logger):
         >>> from datetime import timedelta
         >>> a = RootMetadata()
         >>> a.duration = timedelta(seconds=2300)
-        >>> a.get('duration')
-        datetime.timedelta(0, 2300)
+        >>> a.get('duration') == timedelta(seconds=2300)
+        True
         >>> a.get('author', 'Anonymous')
         'Anonymous'
         """
@@ -243,7 +243,7 @@ class MultipleMetadata(RootMetadata):
         return self.__groups[key]
 
     def iterGroups(self):
-        return iter(self.__groups.values())
+        return iter(self.__groups.values)
 
     def __bool__(self):
         if RootMetadata.__bool__(self):

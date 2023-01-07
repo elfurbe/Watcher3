@@ -1,5 +1,3 @@
-import six
-
 import cherrypy
 from cherrypy.test import helper
 
@@ -17,6 +15,7 @@ class IteratorBase(object):
     def decr(cls):
         cls.created -= 1
 
+
 class OurGenerator(IteratorBase):
 
     def __iter__(self):
@@ -26,6 +25,7 @@ class OurGenerator(IteratorBase):
                 yield self.datachunk
         finally:
             self.decr()
+
 
 class OurIterator(IteratorBase):
 
@@ -58,10 +58,12 @@ class OurIterator(IteratorBase):
     def __del__(self):
         self.decrement()
 
+
 class OurClosableIterator(OurIterator):
 
     def close(self):
         self.decrement()
+
 
 class OurNotClosableIterator(OurIterator):
 
@@ -69,8 +71,10 @@ class OurNotClosableIterator(OurIterator):
     def close(self, somearg):
         self.decrement()
 
+
 class OurUnclosableIterator(OurIterator):
-    close = 'close' # not callable!
+    close = 'close'  # not callable!
+
 
 class IteratorTest(helper.CPWebCase):
 
@@ -82,7 +86,7 @@ class IteratorTest(helper.CPWebCase):
             @cherrypy.expose
             def count(self, clsname):
                 cherrypy.response.headers['Content-Type'] = 'text/plain'
-                return six.text_type(globals()[clsname].created)
+                return str(globals()[clsname].created)
 
             @cherrypy.expose
             def getall(self, clsname):
@@ -133,7 +137,8 @@ class IteratorTest(helper.CPWebCase):
             headers = response.getheaders()
             for header_name, header_value in headers:
                 if header_name.lower() == 'content-length':
-                    assert header_value == six.text_type(1024 * 16 * 256), header_value
+                    expected = str(1024 * 16 * 256)
+                    assert header_value == expected, header_value
                     break
             else:
                 raise AssertionError('No Content-Length header found')

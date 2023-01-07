@@ -9,7 +9,7 @@ except ImportError:
 
 __author__ = 'S Anand'
 __email__ = 'root.node@gmail.com'
-__version__ = '0.1.9'
+__version__ = '0.2.1'
 
 # Python 3: define unicode() as str()
 if sys.version_info[0] == 3:
@@ -19,7 +19,8 @@ if sys.version_info[0] == 3:
 
 class XMLData(object):
     def __init__(self, xml_fromstring=True, xml_tostring=True, element=None, dict_type=None,
-                 list_type=None, attr_prefix=None, text_content=None, simple_text=False):
+                 list_type=None, attr_prefix=None, text_content=None, simple_text=False,
+                 invalid_tags=None):
         # xml_fromstring == False(y) => '1' -> '1'
         # xml_fromstring == True     => '1' -> 1
         # xml_fromstring == fn       => '1' -> fn(1)
@@ -43,6 +44,18 @@ class XMLData(object):
         # simple_text == False or None or 0 => '<x>a</x>' = {'x': {'a': {}}}
         # simple_text == True               => '<x>a</x>' = {'x': 'a'}
         self.simple_text = simple_text
+        # invalid_tags == 'drop' => tags like $ are ignored
+        if invalid_tags == 'drop':
+            self._element = self.element
+            self.element = self._make_valid_element
+        elif invalid_tags is not None:
+            raise TypeError('invalid_tags can be "drop" or None, not "%s"' % invalid_tags)
+
+    def _make_valid_element(self, key):
+        try:
+            return self._element(key)
+        except (TypeError, ValueError):
+            pass
 
     @staticmethod
     def _tostring(value):
@@ -51,26 +64,36 @@ class XMLData(object):
             value = 'true'
         elif value is False:
             value = 'false'
+        elif value is None:
+            value = ''
         return unicode(value)       # noqa: convert to whatever native unicode repr
 
     @staticmethod
     def _fromstring(value):
         '''Convert XML string value to None, boolean, int or float'''
-        if not value:
+        # NOTE: Is this even possible ?
+        if value is None:
             return None
-        std_value = value.strip().lower()
-        if std_value == 'true':
+
+        # FIXME: In XML, booleans are either 0/false or 1/true (lower-case !)
+        if value.lower() == 'true':
             return True
-        elif std_value == 'false':
+        elif value.lower() == 'false':
             return False
+
+        # FIXME: Using int() or float() is eating whitespaces unintendedly here
         try:
-            return int(std_value)
+            return int(value)
         except ValueError:
             pass
+
         try:
-            return float(std_value)
+            # Test for infinity and NaN values
+            if float('-inf') < float(value) < float('inf'):
+                return float(value)
         except ValueError:
             pass
+
         return value
 
     def etree(self, data, root=None):
@@ -106,6 +129,8 @@ class XMLData(object):
                 values = value if value_is_list else [value]
                 for value in values:
                     elem = self.element(key)
+                    if elem is None:
+                        continue
                     result.append(elem)
                     # Treat scalars as text content, not children (Parker)
                     if not isinstance(value, (self.dict, dict, self.list, list)):
@@ -116,7 +141,9 @@ class XMLData(object):
             if self.text_content is None and root is not None:
                 root.text = self._tostring(data)
             else:
-                result.append(self.element(self._tostring(data)))
+                elem = self.element(self._tostring(data))
+                if elem is not None:
+                    result.append(elem)
         return result
 
     def data(self, root):
@@ -127,8 +154,8 @@ class XMLData(object):
             attr = attr if self.attr_prefix is None else self.attr_prefix + attr
             value[attr] = self._fromstring(attrval)
         if root.text and self.text_content is not None:
-            text = root.text.strip()
-            if text:
+            text = root.text
+            if text.strip():
                 if self.simple_text and len(children) == len(root.attrib) == 0:
                     value = self._fromstring(text)
                 else:
@@ -140,6 +167,9 @@ class XMLData(object):
             else:
                 result = value.setdefault(child.tag, self.list())
                 result += self.data(child).values()
+        # if simple_text, elements with no children nor attrs become '', not {}
+        if isinstance(value, dict) and not value and self.simple_text:
+            value = ''
         return self.dict([(root.tag, value)])
 
 
@@ -168,7 +198,7 @@ class Parker(XMLData):
         super(Parker, self).__init__(**kwargs)
 
     def data(self, root, preserve_root=False):
-        'Convert etree.Element into a dictionary'
+        '''Convert etree.Element into a dictionary'''
         # If preserve_root is False, return the root element. This is easiest
         # done by wrapping the XML in a dummy root element that will be ignored.
         if preserve_root:
@@ -205,9 +235,9 @@ class Abdera(XMLData):
 
         # Add attributes specific 'attributes' key
         if root.attrib:
-            value[u'attributes'] = self.dict()
+            value['attributes'] = self.dict()
             for attr, attrval in root.attrib.items():
-                value[u'attributes'][unicode(attr)] = self._fromstring(attrval)
+                value['attributes'][unicode(attr)] = self._fromstring(attrval)
 
         # Add children to specific 'children' key
         children_list = self.list()
@@ -215,8 +245,8 @@ class Abdera(XMLData):
 
         # Add root text
         if root.text and self.text_content is not None:
-            text = root.text.strip()
-            if text:
+            text = root.text
+            if text.strip():
                 if self.simple_text and len(children) == len(root.attrib) == 0:
                     value = self._fromstring(text)
                 else:
@@ -231,7 +261,7 @@ class Abdera(XMLData):
             value = children_list[0]
 
         elif len(children_list) > 0:
-            value[u'children'] = children_list
+            value['children'] = children_list
 
         return self.dict([(unicode(root.tag), value)])
 
@@ -245,16 +275,52 @@ class Cobra(XMLData):
         super(Cobra, self).__init__(simple_text=True, text_content=True,
                                     xml_fromstring=False, **kwargs)
 
+    def etree(self, data, root=None):
+        '''Convert data structure into a list of etree.Element'''
+        result = self.list() if root is None else root
+        if isinstance(data, (self.dict, dict)):
+            for key, value in data.items():
+                if isinstance(value, (self.dict, dict)):
+                    elem = self.element(key)
+                    if elem is None:
+                        continue
+                    result.append(elem)
+
+                    if 'attributes' in value:
+                        for k, v in value['attributes'].items():
+                            elem.set(k, self._tostring(v))
+                    # else:
+                    #     raise ValueError('Cobra requires "attributes" key for each element')
+
+                    if 'children' in value:
+                        for v in value['children']:
+                            self.etree(v, root=elem)
+                else:
+                    elem = self.element(key)
+                    if elem is None:
+                        continue
+                    elem.text = self._tostring(value)
+                    result.append(elem)
+        else:
+            if root is not None:
+                root.text = self._tostring(data)
+            else:
+                elem = self.element(self._tostring(data))
+                if elem is not None:
+                    result.append(elem)
+
+        return result
+
     def data(self, root):
         '''Convert etree.Element into a dictionary'''
 
         value = self.dict()
 
         # Add attributes to 'attributes' key (sorted!) even when empty
-        value[u'attributes'] = self.dict()
+        value['attributes'] = self.dict()
         if root.attrib:
             for attr in sorted(root.attrib):
-                value[u'attributes'][unicode(attr)] = root.attrib[attr]
+                value['attributes'][unicode(attr)] = root.attrib[attr]
 
         # Add children to specific 'children' key
         children_list = self.list()
@@ -262,8 +328,8 @@ class Cobra(XMLData):
 
         # Add root text
         if root.text and self.text_content is not None:
-            text = root.text.strip()
-            if text:
+            text = root.text
+            if text.strip():
                 if self.simple_text and len(children) == len(root.attrib) == 0:
                     value = self._fromstring(text)
                 else:
@@ -282,7 +348,7 @@ class Cobra(XMLData):
                 children_list.append(self.data(child))
 
         if len(children_list) > 0:
-            value[u'children'] = children_list
+            value['children'] = children_list
 
         return self.dict([(unicode(root.tag), value)])
 

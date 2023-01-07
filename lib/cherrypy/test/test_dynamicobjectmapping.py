@@ -1,7 +1,4 @@
-import six
-
 import cherrypy
-from cherrypy._cpcompat import sorted
 from cherrypy.test import helper
 
 script_names = ['', '/foo', '/users/fred/blog', '/corp/blog']
@@ -80,7 +77,7 @@ def setup_server():
             self.name = name
 
         def __unicode__(self):
-            return unicode(self.name)
+            return str(self.name)
 
         def __str__(self):
             return str(self.name)
@@ -106,7 +103,7 @@ def setup_server():
             return 'POST %d' % make_user(name)
 
         def GET(self):
-            return six.text_type(sorted(user_lookup.keys()))
+            return str(sorted(user_lookup.keys()))
 
         def dynamic_dispatch(self, vpath):
             try:
@@ -131,7 +128,7 @@ def setup_server():
             """
             Return the appropriate representation of the instance.
             """
-            return six.text_type(self.user)
+            return str(self.user)
 
         def POST(self, name):
             """
@@ -255,9 +252,10 @@ def setup_server():
 
     md = cherrypy.dispatch.MethodDispatcher('dynamic_dispatch')
     for url in script_names:
-        conf = {'/': {
-            'user': (url or '/').split('/')[-2],
-        },
+        conf = {
+            '/': {
+                'user': (url or '/').split('/')[-2],
+            },
             '/users': {
                 'request.dispatch': md
             },
@@ -270,7 +268,7 @@ class DynamicObjectMappingTest(helper.CPWebCase):
 
     def testObjectMapping(self):
         for url in script_names:
-            prefix = self.script_name = url
+            self.script_name = url
 
             self.getPage('/')
             self.assertBody('index')

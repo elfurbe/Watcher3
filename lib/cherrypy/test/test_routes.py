@@ -1,6 +1,8 @@
+"""Test Routes dispatcher."""
 import os
+import importlib
 
-import nose
+import pytest
 
 import cherrypy
 from cherrypy.test import helper
@@ -9,14 +11,15 @@ curdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
 
 
 class RoutesDispatchTest(helper.CPWebCase):
+    """Routes dispatcher test suite."""
 
     @staticmethod
     def setup_server():
-
+        """Set up cherrypy test instance."""
         try:
-            import routes  # noqa
+            importlib.import_module('routes')
         except ImportError:
-            raise nose.SkipTest('Install routes to test RoutesDispatcher code')
+            pytest.skip('Install routes to test RoutesDispatcher code')
 
         class Dummy:
 
@@ -56,6 +59,7 @@ class RoutesDispatchTest(helper.CPWebCase):
         cherrypy.tree.mount(root=None, config=conf)
 
     def test_Routes_Dispatch(self):
+        """Check that routes package based URI dispatching works correctly."""
         self.getPage('/hounslow')
         self.assertStatus('200 OK')
         self.assertBody('Welcome to Hounslow, pop. 10000')

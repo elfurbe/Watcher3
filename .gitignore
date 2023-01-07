@@ -25,3 +25,5 @@ TODO
 # Readme
 README.md
 ISSUE_TEMPLATE.md
+*.dist-info
+*.egg-info

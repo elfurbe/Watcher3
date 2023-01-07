@@ -23,8 +23,7 @@ Introduction:
       "__str__()" method, which returns a syntetic view of this contents.
     - CPIndex are constant pool indexes (UInt16).  It is possible to specify
       what type of CPInfo they are allowed to points to.  They also have a
-      custom display method, usually printing something like "->  foo", where
-      foo is the str() of their target CPInfo.
+      custom display method, usually printing the str() of their target CPInfo.
 
 References:
  * The Java Virtual Machine Specification, 2nd edition, chapter 4, in HTML:
@@ -114,7 +113,7 @@ def eat_descriptor(descr):
     if (descr[0] == 'L'):
         try:
             end = descr.find(';')
-        except:
+        except Exception:
             raise ParserError("Not a valid descriptor string: " + descr)
         type = descr[1:end]
         descr = descr[end:]
@@ -219,13 +218,13 @@ class ConstantPool(FieldSet):
 
 
 ###############################################################################
-class CPIndex(UInt16):
+class CPIndexBase(object):
     """
     Holds index of a constant pool entry.
     """
 
     def __init__(self, parent, name, description=None, target_types=None,
-                 target_text_handler=(lambda x: x), allow_zero=False):
+                 target_text_handler=None, allow_zero=False):
         """
         Initialize a CPIndex.
         - target_type is the tuple of expected type for the target CPInfo
@@ -235,7 +234,7 @@ class CPIndex(UInt16):
         - allow_zero states whether null index is allowed (sometimes, constant
           pool index is optionnal)
         """
-        UInt16.__init__(self, parent, name, description)
+        super().__init__(parent, name, description)
         if isinstance(target_types, str):
             self.target_types = (target_types,)
         else:
@@ -245,13 +244,16 @@ class CPIndex(UInt16):
         self.getOriginalDisplay = lambda: self.value
 
     def createDisplay(self):
-        cp_entry = self.get_cp_entry()
+        cp_entry = self._get_cp_entry()
         if self.allow_zero and not cp_entry:
             return "ZERO"
         assert cp_entry
-        return "-> " + self.target_text_handler(str(cp_entry))
+        if self.target_text_handler is None:
+            return str(cp_entry)
+        else:
+            return self.target_text_handler(cp_entry.rawvalue())
 
-    def get_cp_entry(self):
+    def _get_cp_entry(self):
         """
         Returns the target CPInfo field.
         """
@@ -263,6 +265,20 @@ class CPIndex(UInt16):
         if self.target_types:
             assert cp_entry.constant_type in self.target_types
         return cp_entry
+
+    def str(self):
+        return str(self._get_cp_entry())
+
+    def rawvalue(self):
+        return self._get_cp_entry().rawvalue()
+
+
+class CPIndex(CPIndexBase, UInt16):
+    pass
+
+
+class CPIndexShort(CPIndexBase, UInt8):
+    pass
 
 
 ###############################################################################
@@ -301,6 +317,9 @@ class OpcodeCPIndex(JavaOpcode):
         yield CPIndex(self, "index")
 
     def createDisplay(self):
+        return "%s(%s)" % (self.op, self["index"].display)
+
+    def createValue(self):
         return "%s(%i)" % (self.op, self["index"].value)
 
 
@@ -309,9 +328,12 @@ class OpcodeCPIndexShort(JavaOpcode):
 
     def createFields(self):
         yield UInt8(self, "opcode")
-        yield UInt8(self, "index")
+        yield CPIndexShort(self, "index")
 
     def createDisplay(self):
+        return "%s(%s)" % (self.op, self["index"].display)
+
+    def createValue(self):
         return "%s(%i)" % (self.op, self["index"].value)
 
 
@@ -744,6 +766,30 @@ class CPInfo(FieldSet):
             raise ParserError("Not a valid constant pool element type: "
                               + self["tag"].value)
 
+    def rawvalue(self):
+        """
+        Returns a string as close to the "raw" Constant pool value as possible.
+        """
+
+        if self.constant_type == "Utf8":
+            return self["bytes"].value
+        elif self.constant_type in ("Integer", "Float", "Long", "Double"):
+            return self["bytes"].value
+        elif self.constant_type == "Class":
+            return self["name_index"].rawvalue()
+        elif self.constant_type == "String":
+            return self["string_index"].rawvalue()
+        elif self.constant_type in ("Fieldref", "Methodref", "InterfaceMethodref"):
+            descriptor, name = self["name_and_type_index"].rawvalue()
+            return (self["class_index"].rawvalue(), descriptor, name)
+        elif self.constant_type == "NameAndType":
+            return (self["descriptor_index"].rawvalue(),
+                    self["name_index"].rawvalue())
+        else:
+            # FIXME: Return "<error>" instead of raising an exception?
+            raise ParserError("Not a valid constant pool element type: "
+                              + self["tag"].value)
+
     def __str__(self):
         """
         Returns a human-readable string representation of the constant pool
@@ -751,24 +797,20 @@ class CPInfo(FieldSet):
         to it.
         """
         if self.constant_type == "Utf8":
-            return self["bytes"].value
+            return '"' + self.rawvalue().replace('\\', '\\\\').replace('"', '\\"') + '"'
         elif self.constant_type in ("Integer", "Float", "Long", "Double"):
             return self["bytes"].display
         elif self.constant_type == "Class":
-            class_name = str(self["name_index"].get_cp_entry())
-            return class_name.replace("/", ".")
+            return self["name_index"].rawvalue().replace("/", ".")
         elif self.constant_type == "String":
-            return str(self["string_index"].get_cp_entry())
-        elif self.constant_type == "Fieldref":
-            return "%s (from %s)" % (self["name_and_type_index"], self["class_index"])
-        elif self.constant_type == "Methodref":
-            return "%s (from %s)" % (self["name_and_type_index"], self["class_index"])
-        elif self.constant_type == "InterfaceMethodref":
-            return "%s (from %s)" % (self["name_and_type_index"], self["class_index"])
+            return self["string_index"].str()
+        elif self.constant_type in ("Fieldref", "Methodref", "InterfaceMethodref"):
+            classname, descriptor, name = self.rawvalue()
+            fullname = classname.replace('/', '.') + '.' + name
+            return parse_any_descriptor(descriptor, name=fullname)
         elif self.constant_type == "NameAndType":
-            return parse_any_descriptor(
-                str(self["descriptor_index"].get_cp_entry()),
-                name=str(self["name_index"].get_cp_entry()))
+            descriptor, name = self.rawvalue()
+            return parse_any_descriptor(descriptor, name=name)
         else:
             # FIXME: Return "<error>" instead of raising an exception?
             raise ParserError("Not a valid constant pool element type: "
@@ -819,8 +861,8 @@ class FieldInfo(FieldSet):
             if self[mod].value:
                 bits.append(mod)
         bits.append(parse_field_descriptor(
-            str(self['descriptor_index'].get_cp_entry()),
-            name=str(self['name_index'].get_cp_entry())))
+            self['descriptor_index'].rawvalue()),
+            name=self['name_index'].rawvalue())
         return ' '.join(bits)
 
 
@@ -867,8 +909,8 @@ class MethodInfo(FieldSet):
                     'abstract', 'strict', 'synthetic']:
             if self[mod].value:
                 bits.append(mod)
-        name = str(self['name_index'].get_cp_entry())
-        meth = str(self['descriptor_index'].get_cp_entry())
+        name = self['name_index'].rawvalue()
+        meth = self['descriptor_index'].rawvalue()
         bits.append(parse_method_descriptor(meth, name))
         return ' '.join(bits)
 
@@ -889,7 +931,7 @@ class AttributeInfo(FieldSet):
     def createFields(self):
         yield CPIndex(self, "attribute_name_index", "Attribute name", target_types="Utf8")
         yield UInt32(self, "attribute_length", "Length of the attribute")
-        attr_name = str(self["attribute_name_index"].get_cp_entry())
+        attr_name = self["attribute_name_index"].rawvalue()
 
         # ConstantValue_attribute {
         #   u2 attribute_name_index;
@@ -1076,7 +1118,7 @@ class InnerClassesEntry(StaticFieldSet):
         if not self['interface'].value:
             bits.append('class')
 
-        name = str(self['inner_class_info_index'].get_cp_entry())
+        name = self['inner_class_info_index'].str()
         bits.append(name)
         return ' '.join(bits)
 
@@ -1086,6 +1128,12 @@ class LineNumberTableEntry(StaticFieldSet):
         (UInt16, "start_pc"),
         (UInt16, "line_number")
     )
+
+    def createValue(self):
+        return (self['start_pc'].value, self['line_number'].value)
+
+    def createDisplay(self):
+        return "%d @ line %d" % self.value
 
 
 class LocalVariableTableEntry(StaticFieldSet):

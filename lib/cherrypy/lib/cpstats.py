@@ -194,7 +194,7 @@ import threading
 import time
 
 import cherrypy
-from cherrypy._cpcompat import json
+from cherrypy._json import json
 
 # ------------------------------- Statistics -------------------------------- #
 
@@ -205,7 +205,7 @@ if not hasattr(logging, 'statistics'):
 def extrapolate_statistics(scope):
     """Return an extrapolated copy of the given scope."""
     c = {}
-    for k, v in list(scope.items()):
+    for k, v in scope.copy().items():
         if isinstance(v, dict):
             v = extrapolate_statistics(v)
         elif isinstance(v, (list, tuple)):
@@ -248,7 +248,9 @@ appstats.update({
     'Requests': {},
 })
 
-proc_time = lambda s: time.time() - s['Start Time']
+
+def proc_time(s):
+    return time.time() - s['Start Time']
 
 
 class ByteCountWrapper(object):
@@ -294,13 +296,15 @@ class ByteCountWrapper(object):
         return data
 
 
-average_uriset_time = lambda s: s['Count'] and (s['Sum'] / s['Count']) or 0
+def average_uriset_time(s):
+    return s['Count'] and (s['Sum'] / s['Count']) or 0
 
 
 def _get_threading_ident():
     if sys.version_info >= (3, 3):
         return threading.get_ident()
     return threading._get_ident()
+
 
 class StatsTool(cherrypy.Tool):
 
@@ -360,8 +364,8 @@ class StatsTool(cherrypy.Tool):
             w['Bytes Written'] = cl
             appstats['Total Bytes Written'] += cl
 
-        w['Response Status'] = getattr(
-            resp, 'output_status', None) or resp.status
+        w['Response Status'] = \
+            getattr(resp, 'output_status', resp.status).decode()
 
         w['End Time'] = time.time()
         p = w['End Time'] - w['Start Time']
@@ -401,8 +405,13 @@ thisdir = os.path.abspath(os.path.dirname(__file__))
 
 missing = object()
 
-locale_date = lambda v: time.strftime('%c', time.gmtime(v))
-iso_format = lambda v: time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(v))
+
+def locale_date(v):
+    return time.strftime('%c', time.gmtime(v))
+
+
+def iso_format(v):
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(v))
 
 
 def pause_resume(ns):
@@ -602,12 +611,7 @@ table.stats2 th {
         """Return ([headers], [rows]) for the given collection."""
         # E.g., the 'Requests' dict.
         headers = []
-        try:
-            # python2
-            vals = v.itervalues()
-        except AttributeError:
-            # python3
-            vals = v.values()
+        vals = v.values()
         for record in vals:
             for k3 in record:
                 format = formatting.get(k3, missing)
@@ -673,7 +677,7 @@ table.stats2 th {
         def data(self):
             s = extrapolate_statistics(logging.statistics)
             cherrypy.response.headers['Content-Type'] = 'application/json'
-            return json.dumps(s, sort_keys=True, indent=4)
+            return json.dumps(s, sort_keys=True, indent=4).encode('utf-8')
 
     @cherrypy.expose
     def pause(self, namespace):

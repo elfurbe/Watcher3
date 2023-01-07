@@ -6,14 +6,23 @@ import sys
 import time
 import types
 import unittest
-
-import six
+import operator
+from http.client import IncompleteRead
 
 import cherrypy
 from cherrypy import tools
-from cherrypy._cpcompat import copyitems, itervalues
-from cherrypy._cpcompat import IncompleteRead, ntob, ntou, xrange
+from cherrypy._cpcompat import ntou
 from cherrypy.test import helper, _test_decorators
+
+
+*PY_VER_MINOR, _ = PY_VER_PATCH = sys.version_info[:3]
+# Refs:
+# bugs.python.org/issue39389
+# docs.python.org/3.7/whatsnew/changelog.html#python-3-7-7-release-candidate-1
+# docs.python.org/3.8/whatsnew/changelog.html#python-3-8-2-release-candidate-1
+HAS_GZIP_COMPRESSION_HEADER_FIXED = PY_VER_PATCH >= (3, 8, 2) or (
+    PY_VER_MINOR == (3, 7) and PY_VER_PATCH >= (3, 7, 7)
+)
 
 
 timeout = 0.2
@@ -50,7 +59,7 @@ class ToolTests(helper.CPWebCase):
             def _setup(self):
                 def makemap():
                     m = self._merged_args().get('map', {})
-                    cherrypy.request.numerify_map = copyitems(m)
+                    cherrypy.request.numerify_map = list(m.items())
                 cherrypy.request.hooks.attach('on_start_resource', makemap)
 
                 def critical():
@@ -73,15 +82,15 @@ class ToolTests(helper.CPWebCase):
             def nadsat(self):
                 def nadsat_it_up(body):
                     for chunk in body:
-                        chunk = chunk.replace(ntob('good'), ntob('horrorshow'))
-                        chunk = chunk.replace(ntob('piece'), ntob('lomtick'))
+                        chunk = chunk.replace(b'good', b'horrorshow')
+                        chunk = chunk.replace(b'piece', b'lomtick')
                         yield chunk
                 cherrypy.response.body = nadsat_it_up(cherrypy.response.body)
             nadsat.priority = 0
 
             def cleanup(self):
                 # This runs after the request has been completely written out.
-                cherrypy.response.body = [ntob('razdrez')]
+                cherrypy.response.body = [b'razdrez']
                 id = cherrypy.request.params.get('id')
                 if id:
                     self.ended[id] = True
@@ -103,17 +112,15 @@ class ToolTests(helper.CPWebCase):
             def __call__(self, scale):
                 r = cherrypy.response
                 r.collapse_body()
-                if six.PY3:
-                    r.body = [bytes([(x + scale) % 256 for x in r.body[0]])]
-                else:
-                    r.body = [chr((ord(x) + scale) % 256) for x in r.body[0]]
+                r.body = [bytes([(x + scale) % 256 for x in r.body[0]])]
         cherrypy.tools.rotator = cherrypy.Tool('before_finalize', Rotator())
 
         def stream_handler(next_handler, *args, **kwargs):
-            assert cherrypy.request.config.get('tools.streamer.arg') == 'arg value'
+            actual = cherrypy.request.config.get('tools.streamer.arg')
+            assert actual == 'arg value'
             cherrypy.response.output = o = io.BytesIO()
             try:
-                response = next_handler(*args, **kwargs)
+                next_handler(*args, **kwargs)
                 # Ignore the response and return our accumulated output
                 # instead.
                 return o.getvalue()
@@ -129,11 +136,15 @@ class ToolTests(helper.CPWebCase):
                 return 'Howdy earth!'
 
             @cherrypy.expose
-            @cherrypy.config(**{'tools.streamer.on': True, 'tools.streamer.arg': 'arg value'})
+            @cherrypy.config(**{
+                'tools.streamer.on': True,
+                'tools.streamer.arg': 'arg value',
+            })
             def tarfile(self):
-                assert cherrypy.request.config.get('tools.streamer.arg') == 'arg value'
-                cherrypy.response.output.write(ntob('I am '))
-                cherrypy.response.output.write(ntob('a tarfile'))
+                actual = cherrypy.request.config.get('tools.streamer.arg')
+                assert actual == 'arg value'
+                cherrypy.response.output.write(b'I am ')
+                cherrypy.response.output.write(b'a tarfile')
 
             @cherrypy.expose
             def euro(self):
@@ -172,7 +183,7 @@ class ToolTests(helper.CPWebCase):
             """
             def __init__(cls, name, bases, dct):
                 type.__init__(cls, name, bases, dct)
-                for value in itervalues(dct):
+                for value in dct.values():
                     if isinstance(value, types.FunctionType):
                         cherrypy.expose(value)
                 setattr(root, name.lower(), cls())
@@ -211,7 +222,7 @@ class ToolTests(helper.CPWebCase):
 
             @cherrypy.config(**{'response.stream': True})
             def stream(self, id=None):
-                for x in xrange(100000000):
+                for x in range(100000000):
                     yield str(x)
 
         conf = {
@@ -219,7 +230,7 @@ class ToolTests(helper.CPWebCase):
             # Declare Tools in detached config
             '/demo': {
                 'tools.numerify.on': True,
-                'tools.numerify.map': {ntob('pie'): ntob('3.14159')},
+                'tools.numerify.map': {b'pie': b'3.14159'},
             },
             '/demo/restricted': {
                 'request.show_tracebacks': False,
@@ -338,8 +349,9 @@ class ToolTests(helper.CPWebCase):
         # but our 'critical' hook should run and set the error to 502.
         self.getPage('/demo/err_in_onstart')
         self.assertErrorPage(502)
-        self.assertInBody(
-            "AttributeError: 'str' object has no attribute 'items'")
+        tmpl = "AttributeError: 'str' object has no attribute '{attr}'"
+        expected_msg = tmpl.format(attr='items')
+        self.assertInBody(expected_msg)
 
     def testCombinedTools(self):
         expectedResult = (ntou('Hello,world') +
@@ -355,6 +367,13 @@ class ToolTests(helper.CPWebCase):
                          ('Accept-Charset', 'ISO-8859-1,utf-8;q=0.7,*;q=0.7')])
         self.assertInBody(zbuf.getvalue()[:3])
 
+        if not HAS_GZIP_COMPRESSION_HEADER_FIXED:
+            # NOTE: CherryPy adopts a fix from the CPython bug 39389
+            # NOTE: introducing a variable compression XFL flag that
+            # NOTE: was hardcoded to "best compression" before. And so
+            # NOTE: we can only test it on CPython versions that also
+            # NOTE: implement this fix.
+            return
         zbuf = io.BytesIO()
         zfile = gzip.GzipFile(mode='wb', fileobj=zbuf, compresslevel=6)
         zfile.write(expectedResult)
@@ -369,11 +388,7 @@ class ToolTests(helper.CPWebCase):
         # but it proves the priority was changed.
         self.getPage('/decorated_euro/subpath',
                      headers=[('Accept-Encoding', 'gzip')])
-        if six.PY3:
-            self.assertInBody(bytes([(x + 3) % 256 for x in zbuf.getvalue()]))
-        else:
-            self.assertInBody(''.join([chr((ord(x) + 3) % 256)
-                              for x in zbuf.getvalue()]))
+        self.assertInBody(bytes([(x + 3) % 256 for x in zbuf.getvalue()]))
 
     def testBareHooks(self):
         content = 'bit of a pain in me gulliver'
@@ -418,8 +433,10 @@ class ToolTests(helper.CPWebCase):
         self.assertTrue(isinstance(cherrypy.tools.example, cherrypy.Tool))
         self.assertEqual(cherrypy.tools.example._point, 'on_start_resource')
 
-        @cherrypy.tools.register('before_finalize', name='renamed', priority=60)
-        def example():
+        @cherrypy.tools.register(  # noqa: F811
+            'before_finalize', name='renamed', priority=60,
+        )
+        def example():  # noqa: F811
             pass
         self.assertTrue(isinstance(cherrypy.tools.renamed, cherrypy.Tool))
         self.assertEqual(cherrypy.tools.renamed._point, 'before_finalize')
@@ -436,6 +453,23 @@ class SessionAuthTest(unittest.TestCase):
         username and password were unicode.
         """
         sa = cherrypy.lib.cptools.SessionAuth()
-        res = sa.login_screen(None, username=six.text_type('nobody'),
-                              password=six.text_type('anypass'))
+        res = sa.login_screen(None, username=str('nobody'),
+                              password=str('anypass'))
         self.assertTrue(isinstance(res, bytes))
+
+
+class TestHooks:
+    def test_priorities(self):
+        """
+        Hooks should sort by priority order.
+        """
+        Hook = cherrypy._cprequest.Hook
+        hooks = [
+            Hook(None, priority=48),
+            Hook(None),
+            Hook(None, priority=49),
+        ]
+        hooks.sort()
+        by_priority = operator.attrgetter('priority')
+        priorities = list(map(by_priority, hooks))
+        assert priorities == [48, 49, 50]

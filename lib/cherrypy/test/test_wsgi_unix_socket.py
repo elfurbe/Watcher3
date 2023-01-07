@@ -2,12 +2,13 @@ import os
 import socket
 import atexit
 import tempfile
+from http.client import HTTPConnection
 
 import pytest
 
 import cherrypy
 from cherrypy.test import helper
-from cherrypy._cpcompat import HTTPConnection
+
 
 def usocket_path():
     fd, path = tempfile.mkstemp('cp_test.sock')
@@ -15,7 +16,9 @@ def usocket_path():
     os.remove(path)
     return path
 
+
 USOCKET_PATH = usocket_path()
+
 
 class USocketHTTPConnection(HTTPConnection):
     """
@@ -52,7 +55,6 @@ class WSGI_UnixSocket_Test(helper.CPWebCase):
     It exercises the config option `server.socket_file`.
     """
     HTTP_CONN = USocketHTTPConnection(USOCKET_PATH)
-
 
     @staticmethod
     def setup_server():

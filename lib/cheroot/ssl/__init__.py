@@ -2,11 +2,8 @@
 
 from abc import ABCMeta, abstractmethod
 
-from six import add_metaclass
 
-
-@add_metaclass(ABCMeta)
-class Adapter(object):
+class Adapter(metaclass=ABCMeta):
     """Base class for SSL driver library adapters.
 
     Required methods:
@@ -17,7 +14,10 @@ class Adapter(object):
     """
 
     @abstractmethod
-    def __init__(self, certificate, private_key, certificate_chain=None, ciphers=None):
+    def __init__(
+            self, certificate, private_key, certificate_chain=None,
+            ciphers=None,
+    ):
         """Set up certificates, private key ciphers and reset context."""
         self.certificate = certificate
         self.private_key = private_key
@@ -33,14 +33,14 @@ class Adapter(object):
     @abstractmethod
     def wrap(self, sock):
         """Wrap and return the given socket, plus WSGI environ entries."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def get_environ(self):
         """Return WSGI environ entries to be merged into each request."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @abstractmethod
     def makefile(self, sock, mode='r', bufsize=-1):
         """Return socket file object."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover

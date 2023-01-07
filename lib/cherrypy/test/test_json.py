@@ -1,11 +1,11 @@
 import cherrypy
 from cherrypy.test import helper
-
-from cherrypy._cpcompat import json
+from cherrypy._json import json
 
 
 json_out = cherrypy.config(**{'tools.json_out.on': True})
 json_in = cherrypy.config(**{'tools.json_in.on': True})
+
 
 class JsonTest(helper.CPWebCase):
 

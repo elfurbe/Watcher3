@@ -120,7 +120,7 @@ class SysTrayIcon(object):
         if not self._hwnd:
             return      # not started
         PostMessage(self._hwnd, WM_CLOSE, 0, 0)
-        self._message_loop_thread.join() ## calls _destroy
+        self._message_loop_thread.join()
 
     def update(self, icon=None, hover_text=None):
         """ update icon image and/or hover text """

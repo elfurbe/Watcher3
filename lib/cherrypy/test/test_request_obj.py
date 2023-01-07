@@ -4,11 +4,11 @@ from functools import wraps
 import os
 import sys
 import types
-
-import six
+import uuid
+from http.client import IncompleteRead
 
 import cherrypy
-from cherrypy._cpcompat import IncompleteRead, ntob, ntou
+from cherrypy._cpcompat import ntou
 from cherrypy.lib import httputil
 from cherrypy.test import helper
 
@@ -34,6 +34,28 @@ class RequestObjectTests(helper.CPWebCase):
             @cherrypy.expose
             def scheme(self):
                 return cherrypy.request.scheme
+
+            @cherrypy.expose
+            def created_example_com_3128(self):
+                """Handle CONNECT method."""
+                cherrypy.response.status = 204
+
+            @cherrypy.expose
+            def body_example_com_3128(self):
+                """Handle CONNECT method."""
+                return (
+                    cherrypy.request.method
+                    + 'ed to '
+                    + cherrypy.request.path_info
+                )
+
+            @cherrypy.expose
+            def request_uuid4(self):
+                return [
+                    str(cherrypy.request.unique_id),
+                    ' ',
+                    str(cherrypy.request.unique_id),
+                ]
 
         root = Root()
 
@@ -219,7 +241,7 @@ class RequestObjectTests(helper.CPWebCase):
 
             def ifmatch(self):
                 val = cherrypy.request.headers['If-Match']
-                assert isinstance(val, six.text_type)
+                assert isinstance(val, str)
                 cherrypy.response.headers['ETag'] = val
                 return val
 
@@ -227,7 +249,7 @@ class RequestObjectTests(helper.CPWebCase):
 
             def get_elements(self, headername):
                 e = cherrypy.request.headers.elements(headername)
-                return '\n'.join([six.text_type(x) for x in e])
+                return '\n'.join([str(x) for x in e])
 
         class Method(Test):
 
@@ -300,12 +322,27 @@ class RequestObjectTests(helper.CPWebCase):
         self.getPage('/scheme')
         self.assertBody(self.scheme)
 
+    def test_per_request_uuid4(self):
+        self.getPage('/request_uuid4')
+        first_uuid4, _, second_uuid4 = self.body.decode().partition(' ')
+        assert (
+            uuid.UUID(first_uuid4, version=4)
+            == uuid.UUID(second_uuid4, version=4)
+        )
+
+        self.getPage('/request_uuid4')
+        third_uuid4, _, _ = self.body.decode().partition(' ')
+        assert (
+            uuid.UUID(first_uuid4, version=4)
+            != uuid.UUID(third_uuid4, version=4)
+        )
+
     def testRelativeURIPathInfo(self):
         self.getPage('/pathinfo/foo/bar')
         self.assertBody('/pathinfo/foo/bar')
 
     def testAbsoluteURIPathInfo(self):
-        # http://cherrypy.org/ticket/1061
+        # http://cherrypy.dev/ticket/1061
         self.getPage('http://localhost/pathinfo/foo/bar')
         self.assertBody('/pathinfo/foo/bar')
 
@@ -338,10 +375,10 @@ class RequestObjectTests(helper.CPWebCase):
 
         # Make sure that encoded = and & get parsed correctly
         self.getPage(
-            '/params/code?url=http%3A//cherrypy.org/index%3Fa%3D1%26b%3D2')
+            '/params/code?url=http%3A//cherrypy.dev/index%3Fa%3D1%26b%3D2')
         self.assertBody('args: %s kwargs: %s' %
                         (('code',),
-                         [('url', ntou('http://cherrypy.org/index?a=1&b=2'))]))
+                         [('url', ntou('http://cherrypy.dev/index?a=1&b=2'))]))
 
         # Test coordinates sent by <img ismap>
         self.getPage('/params/ismap?223,114')
@@ -689,14 +726,14 @@ class RequestObjectTests(helper.CPWebCase):
             self.getPage('/headers/ifmatch',
                          [('If-Match', ntou('=?utf-8?q?%s?=') % c)])
             # The body should be utf-8 encoded.
-            self.assertBody(ntob('\xe2\x84\xabngstr\xc3\xb6m'))
+            self.assertBody(b'\xe2\x84\xabngstr\xc3\xb6m')
             # But the Etag header should be RFC-2047 encoded (binary)
             self.assertHeader('ETag', ntou('=?utf-8?b?4oSrbmdzdHLDtm0=?='))
 
             # Test a *LONG* RFC-2047-encoded request and response header value
             self.getPage('/headers/ifmatch',
                          [('If-Match', ntou('=?utf-8?q?%s?=') % (c * 10))])
-            self.assertBody(ntob('\xe2\x84\xabngstr\xc3\xb6m') * 10)
+            self.assertBody(b'\xe2\x84\xabngstr\xc3\xb6m' * 10)
             # Note: this is different output for Python3, but it decodes fine.
             etag = self.assertHeader(
                 'ETag',
@@ -719,6 +756,16 @@ class RequestObjectTests(helper.CPWebCase):
                      headers=[('Content-type', 'application/json')])
         self.assertBody('application/json')
 
+    def test_dangerous_host(self):
+        """
+        Dangerous characters like newlines should be elided.
+        Ref #1974.
+        """
+        # foo\nbar
+        encoded = '=?iso-8859-1?q?foo=0Abar?='
+        self.getPage('/headers/Host', headers=[('Host', encoded)])
+        self.assertBody('foobar')
+
     def test_basic_HTTPMethods(self):
         helper.webtest.methods_with_bodies = ('POST', 'PUT', 'PROPFIND',
                                               'PATCH')
@@ -732,7 +779,7 @@ class RequestObjectTests(helper.CPWebCase):
                 self.assertBody('')
             elif m == 'TRACE':
                 # Some HTTP servers (like modpy) have their own TRACE support
-                self.assertEqual(self.body[:5], ntob('TRACE'))
+                self.assertEqual(self.body[:5], b'TRACE')
             else:
                 self.assertBody(m)
 
@@ -752,7 +799,7 @@ class RequestObjectTests(helper.CPWebCase):
 
         # Request a PATCH method with a file body but no Content-Type.
         # See https://github.com/cherrypy/cherrypy/issues/790.
-        b = ntob('one thing on top of another')
+        b = b'one thing on top of another'
         self.persistent = True
         try:
             conn = self.HTTP_CONN
@@ -792,7 +839,7 @@ class RequestObjectTests(helper.CPWebCase):
 
         # Request a PUT method with a file body but no Content-Type.
         # See https://github.com/cherrypy/cherrypy/issues/790.
-        b = ntob('one thing on top of another')
+        b = b'one thing on top of another'
         self.persistent = True
         try:
             conn = self.HTTP_CONN
@@ -847,15 +894,47 @@ class RequestObjectTests(helper.CPWebCase):
         self.assertStatus(200)
 
     def test_CONNECT_method(self):
-        if getattr(cherrypy.server, 'using_apache', False):
-            return self.skip('skipped due to known Apache differences... ')
+        self.persistent = True
+        try:
+            conn = self.HTTP_CONN
+            conn.request('CONNECT', 'created.example.com:3128')
+            response = conn.response_class(conn.sock, method='CONNECT')
+            response.begin()
+            self.assertEqual(response.status, 204)
+        finally:
+            self.persistent = False
 
-        self.getPage('/method/', method='CONNECT')
-        self.assertBody('CONNECT')
+        self.persistent = True
+        try:
+            conn = self.HTTP_CONN
+            conn.request('CONNECT', 'body.example.com:3128')
+            response = conn.response_class(conn.sock, method='CONNECT')
+            response.begin()
+            self.assertEqual(response.status, 200)
+            self.body = response.read()
+            self.assertBody(b'CONNECTed to /body.example.com:3128')
+        finally:
+            self.persistent = False
+
+    def test_CONNECT_method_invalid_authority(self):
+        for request_target in ['example.com', 'http://example.com:33',
+                               '/path/', 'path/', '/?q=f', '#f']:
+            self.persistent = True
+            try:
+                conn = self.HTTP_CONN
+                conn.request('CONNECT', request_target)
+                response = conn.response_class(conn.sock, method='CONNECT')
+                response.begin()
+                self.assertEqual(response.status, 400)
+                self.body = response.read()
+                self.assertBody(b'Invalid path in Request-URI: request-target '
+                                b'must match authority-form.')
+            finally:
+                self.persistent = False
 
     def testEmptyThreadlocals(self):
         results = []
         for x in range(20):
             self.getPage('/threadlocal/')
             results.append(self.body)
-        self.assertEqual(results, [ntob('None')] * 20)
+        self.assertEqual(results, [b'None'] * 20)

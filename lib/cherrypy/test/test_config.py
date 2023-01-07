@@ -5,10 +5,7 @@ import os
 import sys
 import unittest
 
-import six
-
 import cherrypy
-import cherrypy._cpcompat as compat
 
 from cherrypy.test import helper
 
@@ -16,7 +13,8 @@ from cherrypy.test import helper
 localDir = os.path.join(os.getcwd(), os.path.dirname(__file__))
 
 
-StringIOFromNative = lambda x: io.StringIO(six.text_type(x))
+def StringIOFromNative(x):
+    return io.StringIO(str(x))
 
 
 def setup_server():
@@ -82,7 +80,7 @@ def setup_server():
 
             def wrapper():
                 params = cherrypy.request.params
-                for name, coercer in list(value.items()):
+                for name, coercer in value.copy().items():
                     try:
                         params[name] = coercer(params[name])
                     except KeyError:
@@ -105,18 +103,12 @@ def setup_server():
         def incr(self, num):
             return num + 1
 
-    if not six.PY3:
-        thing3 = "thing3: unicode('test', errors='ignore')"
-    else:
-        thing3 = ''
-
     ioconf = StringIOFromNative("""
 [/]
 neg: -1234
 filename: os.path.join(sys.prefix, "hello.py")
 thing1: cherrypy.lib.httputil.response_codes[404]
 thing2: __import__('cherrypy.tutorial', globals(), locals(), ['']).thing2
-%s
 complex: 3+2j
 mul: 6*3
 ones: "11"
@@ -125,7 +117,7 @@ stradd: %%(ones)s + %%(twos)s + "33"
 
 [/favicon.ico]
 tools.staticfile.filename = %r
-""" % (thing3, os.path.join(localDir, 'static/dirback.jpg')))
+""" % os.path.join(localDir, 'static/dirback.jpg'))
 
     root = Root()
     root.foo = Foo()
@@ -147,13 +139,13 @@ class ConfigTests(helper.CPWebCase):
 
     def testConfig(self):
         tests = [
-            ('/',        'nex', 'None'),
-            ('/',        'foo', 'this'),
-            ('/',        'bar', 'that'),
-            ('/xyz',     'foo', 'this'),
-            ('/foo/',    'foo', 'this2'),
-            ('/foo/',    'bar', 'that'),
-            ('/foo/',    'bax', 'None'),
+            ('/', 'nex', 'None'),
+            ('/', 'foo', 'this'),
+            ('/', 'bar', 'that'),
+            ('/xyz', 'foo', 'this'),
+            ('/foo/', 'foo', 'this2'),
+            ('/foo/', 'bar', 'that'),
+            ('/foo/', 'bax', 'None'),
             ('/foo/bar', 'baz', "'that2'"),
             ('/foo/nex', 'baz', 'that2'),
             # If 'foo' == 'this', then the mount point '/another' leaks into
@@ -203,10 +195,6 @@ class ConfigTests(helper.CPWebCase):
             from cherrypy.tutorial import thing2
             self.assertBody(repr(thing2))
 
-        if not six.PY3:
-            self.getPage('/repr?key=thing3')
-            self.assertBody(repr(unicode('test')))
-
         self.getPage('/repr?key=complex')
         self.assertBody('(3+2j)')
 
@@ -233,14 +221,14 @@ class ConfigTests(helper.CPWebCase):
         # the favicon in the page handler to be '../favicon.ico',
         # but then overrode it in config to be './static/dirback.jpg'.
         self.getPage('/favicon.ico')
-        self.assertBody(open(os.path.join(localDir, 'static/dirback.jpg'),
-                             'rb').read())
+        with open(os.path.join(localDir, 'static/dirback.jpg'), 'rb') as tf:
+            self.assertBody(tf.read())
 
     def test_request_body_namespace(self):
         self.getPage('/plain', method='POST', headers=[
             ('Content-Type', 'application/x-www-form-urlencoded'),
             ('Content-Length', '13')],
-            body=compat.ntob('\xff\xfex\x00=\xff\xfea\x00b\x00c\x00'))
+            body=b'\xff\xfex\x00=\xff\xfea\x00b\x00c\x00')
         self.assertBody('abc')
 
 
@@ -272,7 +260,6 @@ class VariableSubstitutionTests(unittest.TestCase):
 
 class CallablesInConfigTest(unittest.TestCase):
     setup_server = staticmethod(setup_server)
-
 
     def test_call_with_literal_dict(self):
         from textwrap import dedent

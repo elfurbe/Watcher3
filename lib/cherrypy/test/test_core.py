@@ -7,7 +7,7 @@ import sys
 import types
 
 import cherrypy
-from cherrypy._cpcompat import itervalues, ntob, ntou
+from cherrypy._cpcompat import ntou
 from cherrypy import _cptools, tools
 from cherrypy.lib import httputil, static
 
@@ -55,7 +55,7 @@ class CoreRequestHandlingTest(helper.CPWebCase):
             """
             def __init__(cls, name, bases, dct):
                 type.__init__(cls, name, bases, dct)
-                for value in itervalues(dct):
+                for value in dct.values():
                     if isinstance(value, types.FunctionType):
                         value.exposed = True
                 setattr(root, name.lower(), cls())
@@ -73,6 +73,9 @@ class CoreRequestHandlingTest(helper.CPWebCase):
                 if relative != 'server':
                     relative = bool(relative)
                 return cherrypy.url(path_info, relative=relative)
+
+            def qs(self, qs):
+                return cherrypy.url(qs=qs)
 
         def log_status():
             Status.statuses.append(cherrypy.response.status)
@@ -150,6 +153,10 @@ class CoreRequestHandlingTest(helper.CPWebCase):
             def url_with_quote(self):
                 raise cherrypy.HTTPRedirect("/some\"url/that'we/want")
 
+            def url_with_xss(self):
+                raise cherrypy.HTTPRedirect(
+                    "/some<script>alert(1);</script>url/that'we/want")
+
             def url_with_unicode(self):
                 raise cherrypy.HTTPRedirect(ntou('тест', 'utf-8'))
 
@@ -226,7 +233,7 @@ class CoreRequestHandlingTest(helper.CPWebCase):
                 return ['con', 'tent']
 
             def as_yield(self):
-                yield ntob('content')
+                yield b'content'
 
             @cherrypy.config(**{'tools.flatten.on': True})
             def as_dblyield(self):
@@ -270,8 +277,8 @@ class CoreRequestHandlingTest(helper.CPWebCase):
             def header_list(self):
                 pass
             header_list = cherrypy.tools.append_headers(header_list=[
-                (ntob('WWW-Authenticate'), ntob('Negotiate')),
-                (ntob('WWW-Authenticate'), ntob('Basic realm="foo"')),
+                (b'WWW-Authenticate', b'Negotiate'),
+                (b'WWW-Authenticate', b'Basic realm="foo"'),
             ])(header_list)
 
             def commas(self):
@@ -316,8 +323,10 @@ class CoreRequestHandlingTest(helper.CPWebCase):
         # Make sure GET params are preserved.
         self.getPage('/redirect?id=3')
         self.assertStatus(301)
-        self.assertMatchesBody('<a href=([\'"])%s/redirect/[?]id=3\\1>'
-                          '%s/redirect/[?]id=3</a>' % (self.base(), self.base()))
+        self.assertMatchesBody(
+            '<a href=([\'"])%s/redirect/[?]id=3\\1>'
+            '%s/redirect/[?]id=3</a>' % (self.base(), self.base())
+        )
 
         if self.prefix():
             # Corner case: the "trailing slash" redirect could be tricky if
@@ -325,16 +334,18 @@ class CoreRequestHandlingTest(helper.CPWebCase):
             self.getPage('')
             self.assertStatus(301)
             self.assertMatchesBody("<a href=(['\"])%s/\\1>%s/</a>" %
-                              (self.base(), self.base()))
+                                   (self.base(), self.base()))
 
         # Test that requests for NON-index methods WITH a trailing slash
         # get redirected to the same URI path WITHOUT a trailing slash.
         # Make sure GET params are preserved.
         self.getPage('/redirect/by_code/?code=307')
         self.assertStatus(301)
-        self.assertMatchesBody("<a href=(['\"])%s/redirect/by_code[?]code=307\\1>"
-                          '%s/redirect/by_code[?]code=307</a>'
-                          % (self.base(), self.base()))
+        self.assertMatchesBody(
+            "<a href=(['\"])%s/redirect/by_code[?]code=307\\1>"
+            '%s/redirect/by_code[?]code=307</a>'
+            % (self.base(), self.base())
+        )
 
         # If the trailing_slash tool is off, CP should just continue
         # as if the slashes were correct. But it needs some help
@@ -373,6 +384,11 @@ class CoreRequestHandlingTest(helper.CPWebCase):
         self.assertMatchesBody(
             r"<a href=(['\"])(.*)somewhere%20else\1>\2somewhere%20else</a>")
         self.assertStatus(307)
+
+        self.getPage('/redirect/by_code?code=308')
+        self.assertMatchesBody(
+            r"<a href=(['\"])(.*)somewhere%20else\1>\2somewhere%20else</a>")
+        self.assertStatus(308)
 
         self.getPage('/redirect/nomodify')
         self.assertBody('')
@@ -420,10 +436,14 @@ class CoreRequestHandlingTest(helper.CPWebCase):
         def assertValidXHTML():
             from xml.etree import ElementTree
             try:
-                ElementTree.fromstring('<html><body>%s</body></html>' % self.body)
-            except ElementTree.ParseError as e:
-                self._handlewebError('automatically generated redirect '
-                    'did not generate well-formed html')
+                ElementTree.fromstring(
+                    '<html><body>%s</body></html>' % self.body,
+                )
+            except ElementTree.ParseError:
+                self._handlewebError(
+                    'automatically generated redirect did not '
+                    'generate well-formed html',
+                )
 
         # check redirects to URLs generated valid HTML - we check this
         # by seeing if it appears as valid XHTML.
@@ -435,6 +455,14 @@ class CoreRequestHandlingTest(helper.CPWebCase):
         self.getPage('/redirect/url_with_quote')
         self.assertStatus(303)
         assertValidXHTML()
+
+    def test_redirect_with_xss(self):
+        """A redirect to a URL with HTML injected should result
+        in page contents escaped."""
+        self.getPage('/redirect/url_with_xss')
+        self.assertStatus(303)
+        assert b'<script>' not in self.body
+        assert b'&lt;script&gt;' in self.body
 
     def test_redirect_with_unicode(self):
         """
@@ -526,7 +554,7 @@ class CoreRequestHandlingTest(helper.CPWebCase):
             self.assertStatus(206)
             ct = self.assertHeader('Content-Type')
             expected_type = 'multipart/byteranges; boundary='
-            self.assert_(ct.startswith(expected_type))
+            assert ct.startswith(expected_type)
             boundary = ct[len(expected_type):]
             expected_body = ('\r\n--%s\r\n'
                              'Content-type: text/html\r\n'
@@ -558,9 +586,8 @@ class CoreRequestHandlingTest(helper.CPWebCase):
     def testFavicon(self):
         # favicon.ico is served by staticfile.
         icofilename = os.path.join(localDir, '../favicon.ico')
-        icofile = open(icofilename, 'rb')
-        data = icofile.read()
-        icofile.close()
+        with open(icofilename, 'rb') as icofile:
+            data = icofile.read()
 
         self.getPage('/favicon.ico')
         self.assertBody(data)
@@ -638,6 +665,8 @@ class CoreRequestHandlingTest(helper.CPWebCase):
         self.assertBody('%s/url/other/page1' % self.base())
         self.getPage('/url/?path_info=/other/./page1')
         self.assertBody('%s/other/page1' % self.base())
+        self.getPage('/url/?path_info=/other/././././page1')
+        self.assertBody('%s/other/page1' % self.base())
 
         # Double dots
         self.getPage('/url/leaf?path_info=../page1')
@@ -646,6 +675,20 @@ class CoreRequestHandlingTest(helper.CPWebCase):
         self.assertBody('%s/url/page1' % self.base())
         self.getPage('/url/leaf?path_info=/other/../page1')
         self.assertBody('%s/page1' % self.base())
+        self.getPage('/url/leaf?path_info=/other/../../../page1')
+        self.assertBody('%s/page1' % self.base())
+        self.getPage('/url/leaf?path_info=/other/../../../../../page1')
+        self.assertBody('%s/page1' % self.base())
+
+        # qs param is not normalized as a path
+        self.getPage('/url/qs?qs=/other')
+        self.assertBody('%s/url/qs?/other' % self.base())
+        self.getPage('/url/qs?qs=/other/../page1')
+        self.assertBody('%s/url/qs?/other/../page1' % self.base())
+        self.getPage('/url/qs?qs=../page1')
+        self.assertBody('%s/url/qs?../page1' % self.base())
+        self.getPage('/url/qs?qs=../../page1')
+        self.assertBody('%s/url/qs?../../page1' % self.base())
 
         # Output relative to current path or script_name
         self.getPage('/url/?path_info=page1&relative=True')
@@ -741,7 +784,7 @@ class ErrorTests(helper.CPWebCase):
             @cherrypy.expose
             def stat(self, path):
                 with cherrypy.HTTPError.handle(OSError, 404):
-                    st = os.stat(path)
+                    os.stat(path)
 
         root = Root()
 

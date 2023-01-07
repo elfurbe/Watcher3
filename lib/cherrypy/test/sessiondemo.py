@@ -4,9 +4,9 @@
 import calendar
 from datetime import datetime
 import sys
+
 import cherrypy
 from cherrypy.lib import sessions
-from cherrypy._cpcompat import copyitems
 
 
 page = """
@@ -93,7 +93,7 @@ function init() {
     <tr><th>Python Version:</th><td>%(pyversion)s</td></tr>
 </table>
 </body></html>
-"""
+"""  # noqa E501
 
 
 class Root(object):
@@ -121,7 +121,7 @@ class Root(object):
             'changemsg': '<br>'.join(changemsg),
             'respcookie': cherrypy.response.cookie.output(),
             'reqcookie': cherrypy.request.cookie.output(),
-            'sessiondata': copyitems(cherrypy.session),
+            'sessiondata': list(cherrypy.session.items()),
             'servertime': (
                 datetime.utcnow().strftime('%Y/%m/%d %H:%M') + ' UTC'
             ),
@@ -148,6 +148,7 @@ class Root(object):
         # Must modify data or the session will not be saved.
         cherrypy.session['color'] = 'yellow'
         return self.page()
+
 
 if __name__ == '__main__':
     cherrypy.config.update({

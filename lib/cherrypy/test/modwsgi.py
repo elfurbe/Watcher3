@@ -9,18 +9,18 @@ create a symlink to them if needed.
 KNOWN BUGS
 ==========
 
-##1. Apache processes Range headers automatically; CherryPy's truncated
-##    output is then truncated again by Apache. See test_core.testRanges.
-##    This was worked around in http://www.cherrypy.org/changeset/1319.
+1. Apache processes Range headers automatically; CherryPy's truncated
+    output is then truncated again by Apache. See test_core.testRanges.
+    This was worked around in http://www.cherrypy.dev/changeset/1319.
 2. Apache does not allow custom HTTP methods like CONNECT as per the spec.
     See test_core.testHTTPMethods.
 3. Max request header and body settings do not work with Apache.
-##4. Apache replaces status "reason phrases" automatically. For example,
-##    CherryPy may set "304 Not modified" but Apache will write out
-##    "304 Not Modified" (capital "M").
-##5. Apache does not allow custom error codes as per the spec.
-##6. Apache (or perhaps modpython, or modpython_gateway) unquotes %xx in the
-##    Request-URI too early.
+4. Apache replaces status "reason phrases" automatically. For example,
+    CherryPy may set "304 Not modified" but Apache will write out
+    "304 Not Modified" (capital "M").
+5. Apache does not allow custom error codes as per the spec.
+6. Apache (or perhaps modpython, or modpython_gateway) unquotes %xx in the
+    Request-URI too early.
 7. mod_wsgi will not read request bodies which use the "chunked"
     transfer-coding (it passes REQUEST_CHUNKED_ERROR to ap_setup_client_block
     instead of REQUEST_CHUNKED_DECHUNK, see Apache2's http_protocol.c and
@@ -37,8 +37,12 @@ import re
 import sys
 import time
 
+import portend
+
+from cheroot.test import webtest
+
 import cherrypy
-from cherrypy.test import helper, webtest
+from cherrypy.test import helper
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 
@@ -86,7 +90,7 @@ LoadModule env_module modules/mod_env.so
 
 WSGIScriptAlias / "%(curdir)s/modwsgi.py"
 SetEnv testmod %(testmod)s
-"""
+""" # noqa E501
 
 
 class ModWSGISupervisor(helper.Supervisor):
@@ -105,14 +109,11 @@ class ModWSGISupervisor(helper.Supervisor):
         if not os.path.isabs(mpconf):
             mpconf = os.path.join(curdir, mpconf)
 
-        f = open(mpconf, 'wb')
-        try:
+        with open(mpconf, 'wb') as f:
             output = (self.template %
                       {'port': self.port, 'testmod': modulename,
                        'curdir': curdir})
             f.write(output)
-        finally:
-            f.close()
 
         result = read_process(APACHE_PATH, '-k start -f %s' % mpconf)
         if result:
@@ -120,7 +121,7 @@ class ModWSGISupervisor(helper.Supervisor):
 
         # Make a request so mod_wsgi starts up our app.
         # If we don't, concurrent initial requests will 404.
-        cherrypy._cpserver.wait_for_occupied_port('127.0.0.1', self.port)
+        portend.occupied('127.0.0.1', self.port, timeout=5)
         webtest.openURL('/ihopetheresnodefault', port=self.port)
         time.sleep(1)
 
@@ -133,7 +134,6 @@ loaded = False
 
 
 def application(environ, start_response):
-    import cherrypy
     global loaded
     if not loaded:
         loaded = True

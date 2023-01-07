@@ -1,0 +1,13 @@
+stringscore-0.1.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+stringscore-0.1.0.dist-info/LICENSE.md,sha256=4wFrCqlSkl-QQtS744YH5H65rnsJSgD7XRKVHk9p8PA,1076
+stringscore-0.1.0.dist-info/METADATA,sha256=fvP1pU_Q6Kbv6d6fCUwDrwky0Itz2DNrc-g4xAZ1doA,3039
+stringscore-0.1.0.dist-info/RECORD,,
+stringscore-0.1.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+stringscore-0.1.0.dist-info/WHEEL,sha256=2wepM1nk4DS4eFpYrW1TTqPcoGNfHhhO_i5m4cOimbo,92
+stringscore-0.1.0.dist-info/top_level.txt,sha256=AQQJ9lTGxGEgO5eC6LbM0aF_cbibDdL0_-Aczol8ZHI,12
+stringscore/__init__.py,sha256=B-H7ZM5op0w0jna_xPQ7nxjMzrt_ZRGoKUb7lYY3N20,261
+stringscore/__pycache__/__init__.cpython-311.pyc,,
+stringscore/__pycache__/liquidmetal.cpython-311.pyc,,
+stringscore/__pycache__/quicksilver.cpython-311.pyc,,
+stringscore/liquidmetal.py,sha256=Wwm_jD68PQmISpzWVWUKrHmt-wvcmU2jHl9ErlrGxvk,3521
+stringscore/quicksilver.py,sha256=3e2HW_XcmDYFpYz7vdhO0Cq1j3SuvMcDzv_QP7s_TA4,2416

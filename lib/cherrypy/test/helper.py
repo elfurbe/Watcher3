@@ -10,49 +10,21 @@ import sys
 import time
 import unittest
 import warnings
+import contextlib
 
-import nose
-import six
+import portend
+import pytest
+
+from cheroot.test import webtest
 
 import cherrypy
-from cherrypy._cpcompat import text_or_bytes, copyitems, HTTPSConnection, ntob
+from cherrypy._cpcompat import text_or_bytes, HTTPSConnection, ntob
 from cherrypy.lib import httputil
 from cherrypy.lib import gctools
-from cherrypy.lib.reprconf import unrepr
-from cherrypy.test import webtest
 
-_testconfig = None
 log = logging.getLogger(__name__)
 thisdir = os.path.abspath(os.path.dirname(__file__))
 serverpem = os.path.join(os.getcwd(), thisdir, 'test.pem')
-
-
-def get_tst_config(overconf={}):
-    global _testconfig
-    if _testconfig is None:
-        conf = {
-            'scheme': 'http',
-            'protocol': 'HTTP/1.1',
-            'port': 54583,
-            'host': '127.0.0.1',
-            'validate': False,
-            'server': 'wsgi',
-        }
-        try:
-            import testconfig
-            _conf = testconfig.config.get('supervisor', None)
-            if _conf is not None:
-                for k, v in _conf.items():
-                    if isinstance(v, text_or_bytes):
-                        _conf[k] = unrepr(v)
-                conf.update(_conf)
-        except ImportError:
-            pass
-        _testconfig = conf
-    conf = _testconfig.copy()
-    conf.update(overconf)
-
-    return conf
 
 
 class Supervisor(object):
@@ -66,7 +38,8 @@ class Supervisor(object):
             setattr(self, k, v)
 
 
-log_to_stderr = lambda msg, level: sys.stderr.write(msg + os.linesep)
+def log_to_stderr(msg, level):
+    return sys.stderr.write(msg + os.linesep)
 
 
 class LocalSupervisor(Supervisor):
@@ -120,7 +93,7 @@ class LocalSupervisor(Supervisor):
 
         cherrypy.engine.exit()
 
-        for name, server in copyitems(getattr(cherrypy, 'servers', {})):
+        for name, server in getattr(cherrypy, 'servers', {}).copy().items():
             server.unsubscribe()
             del cherrypy.servers[name]
 
@@ -269,7 +242,14 @@ class CPWebCase(webtest.WebCase):
     def setup_class(cls):
         ''
         # Creates a server
-        conf = get_tst_config()
+        conf = {
+            'scheme': 'http',
+            'protocol': 'HTTP/1.1',
+            'port': 54583,
+            'host': '127.0.0.1',
+            'validate': False,
+            'server': 'wsgi',
+        }
         supervisor_factory = cls.available_servers.get(
             conf.get('server', 'wsgi'))
         if supervisor_factory is None:
@@ -330,22 +310,15 @@ class CPWebCase(webtest.WebCase):
     def exit(self):
         sys.exit()
 
-    def getPage(self, url, headers=None, method='GET', body=None,
-                protocol=None, raise_subcls=None):
-        """Open the url. Return status, headers, body.
-
-        `raise_subcls` must be a tuple with the exceptions classes
-        or a single exception class that are not going to be considered
-        a socket.error regardless that they were are subclass of a
-        socket.error and therefore not considered for a connection retry.
+    def getPage(self, url, *args, **kwargs):
+        """Open the url.
         """
         if self.script_name:
             url = httputil.urljoin(self.script_name, url)
-        return webtest.WebCase.getPage(self, url, headers, method, body,
-                                       protocol, raise_subcls)
+        return webtest.WebCase.getPage(self, url, *args, **kwargs)
 
     def skip(self, msg='skipped '):
-        raise nose.SkipTest(msg)
+        pytest.skip(msg)
 
     def assertErrorPage(self, status, message=None, pattern=''):
         """Compare the response body with a built in error page.
@@ -363,7 +336,7 @@ class CPWebCase(webtest.WebCase):
         epage = re.escape(page)
         epage = epage.replace(
             esc('<pre id="traceback"></pre>'),
-            esc('<pre id="traceback">') + ntob('(.*)') + esc('</pre>'))
+            esc('<pre id="traceback">') + b'(.*)' + esc('</pre>'))
         m = re.match(epage, self.body, re.DOTALL)
         if not m:
             self._handlewebError(
@@ -409,6 +382,8 @@ def _test_method_sorter(_, x, y):
     if x < y:
         return -1
     return 0
+
+
 unittest.TestLoader.sortTestMethodsUsing = _test_method_sorter
 
 
@@ -466,19 +441,19 @@ server.ssl_private_key: r'%s'
             'extra': extra,
         }
         with io.open(self.config_file, 'w', encoding='utf-8') as f:
-            f.write(six.text_type(conf))
+            f.write(str(conf))
 
     def start(self, imports=None):
         """Start cherryd in a subprocess."""
-        cherrypy._cpserver.wait_for_free_port(self.host, self.port)
+        portend.free(self.host, self.port, timeout=1)
 
         args = [
             '-m',
-            'cherrypy.__main__',  # __main__ is needed for `-m` in Python 2.6
+            'cherrypy',
             '-c', self.config_file,
             '-p', self.pid_file,
         ]
-        """
+        r"""
         Command for running cherryd server with autoreload enabled
 
         Using
@@ -520,7 +495,7 @@ server.ssl_private_key: r'%s'
         if self.wait:
             self.exit_code = self._proc.wait()
         else:
-            cherrypy._cpserver.wait_for_occupied_port(self.host, self.port)
+            portend.occupied(self.host, self.port, timeout=5)
 
         # Give the engine a wee bit more time to finish STARTING
         if self.daemonize:
@@ -530,7 +505,8 @@ server.ssl_private_key: r'%s'
 
     def get_pid(self):
         if self.daemonize:
-            return int(open(self.pid_file, 'rb').read())
+            with open(self.pid_file, 'rb') as f:
+                return int(f.read())
         return self._proc.pid
 
     def join(self):
@@ -540,20 +516,5 @@ server.ssl_private_key: r'%s'
         self._proc.wait()
 
     def _join_daemon(self):
-        try:
-            try:
-                # Mac, UNIX
-                os.wait()
-            except AttributeError:
-                # Windows
-                try:
-                    pid = self.get_pid()
-                except IOError:
-                    # Assume the subprocess deleted the pidfile on shutdown.
-                    pass
-                else:
-                    os.waitpid(pid, 0)
-        except OSError:
-            x = sys.exc_info()[1]
-            if x.args != (10, 'No child processes'):
-                raise
+        with contextlib.suppress(IOError):
+            os.waitpid(self.get_pid(), 0)
