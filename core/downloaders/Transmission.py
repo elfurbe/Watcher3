@@ -1,6 +1,6 @@
 import logging
 
-from lib import transmissionrpc
+import transmission_rpc
 
 import core
 from datetime import datetime
@@ -23,7 +23,7 @@ def test_connection(data):
     password = data['pass']
 
     try:
-        client = transmissionrpc.Client(host, port, user=user, password=password)
+        client = transmission_rpc.Client(host, port, user=user, password=password)
         if type(client.rpc_version) == int:
             return True
         else:
@@ -56,7 +56,7 @@ def add_torrent(data):
     user = conf['user']
     password = conf['pass']
 
-    client = transmissionrpc.Client(host, port, user=user, password=password)
+    client = transmission_rpc.Client(host, port, user=user, password=password)
 
     url = data['torrentfile']
     paused = conf['addpaused']
@@ -130,7 +130,7 @@ def set_torrent_limits(downloadid):
         password = conf['pass']
 
         try:
-            client = transmissionrpc.Client(host, port, user=user, password=password)
+            client = transmission_rpc.Client(host, port, user=user, password=password)
             client.change_torrent(downloadid, **args)
             return True
         except (SystemExit, KeyboardInterrupt):
@@ -158,7 +158,7 @@ def get_torrents_status(stalled_for=None, progress={}):
     try:
         torrents = []
 
-        client = transmissionrpc.Client(host, port, user=user, password=password)
+        client = transmission_rpc.Client(host, port, user=user, password=password)
 
         now = int(datetime.timestamp(datetime.now()))
         fields = ['id', 'hashString', 'isFinished', 'isStalled', 'status', 'percentDone', 'name', 'downloadedEver']
@@ -194,7 +194,7 @@ def cancel_download(downloadid):
     user = conf['user']
     password = conf['pass']
 
-    client = transmissionrpc.Client(host, port, user=user, password=password)
+    client = transmission_rpc.Client(host, port, user=user, password=password)
 
     try:
         client.remove_torrent([downloadid], delete_data=True)
