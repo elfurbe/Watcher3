@@ -79,7 +79,7 @@ def search_all():
 
     rss_movies = [i for i in _get_rss_movies(movies) if Manage.verify(i, today=today)]
     if rss_movies:
-        logging.info('Checking RSS feeds for {} movies.'.format(len(rss_movies)))
+        logging.info(f'Checking RSS feeds for {len(rss_movies)} movies.')
         rss_sync(rss_movies)
 
     if core.CONFIG['Search']['autograb']:
@@ -114,7 +114,7 @@ default status Available.
     english_title = movie.get('english_title', '')
     language = movie.get('download_language', '')
 
-    logging.info('Performing backlog search for {} {}.'.format(title, year))
+    logging.info(f'Performing backlog search for {title} {year}.')
     proxy.create()
 
     results = []
@@ -166,15 +166,15 @@ default status Available.
                 result['status'] = marked_results[result['guid']]
 
     if not store_results(scored_results, imdbid, backlog=True):
-        logging.error('Unable to store search results for {}'.format(imdbid))
+        logging.error(f'Unable to store search results for {imdbid}')
         return False
 
     if not Manage.movie_status(imdbid):
-        logging.error('Unable to update movie status for {}'.format(imdbid))
+        logging.error(f'Unable to update movie status for {imdbid}')
         return False
 
     if not core.sql.update('MOVIES', 'backlog', '1', 'imdbid', imdbid):
-        logging.error('Unable to flag backlog search as complete for {}'.format(imdbid))
+        logging.error(f'Unable to flag backlog search as complete for {imdbid}')
         return False
 
     return True
@@ -215,7 +215,7 @@ def rss_sync(movies):
         year = movie['year']
         english_title = movie.get('english_title')
 
-        logging.info('Parsing RSS for {} {}'.format(title, year))
+        logging.info(f'Parsing RSS for {title} {year}')
 
         nn_found = [i for i in newznab_results if i['imdbid'] == imdbid]
 
@@ -232,7 +232,7 @@ def rss_sync(movies):
         results = nn_found + tor_found
 
         if not results:
-            logging.info('Nothing found in RSS for {} {}'.format(title, year))
+            logging.info(f'Nothing found in RSS for {title} {year}')
             continue
 
         # Ignore results we've already stored
@@ -245,7 +245,7 @@ def rss_sync(movies):
             else:
                 continue
 
-        logging.info('Found {} new results for {} {}.'.format(len(new_results), title, year))
+        logging.info(f'Found {len(new_results)} new results for {title} {year}.')
 
         # Get source media and resolution
         for idx, result in enumerate(new_results):
@@ -256,7 +256,7 @@ def rss_sync(movies):
         scored_results = searchresults.score(new_results, imdbid=imdbid)
 
         if len(scored_results) == 0:
-            logging.info('No acceptable results found for {}'.format(imdbid))
+            logging.info(f'No acceptable results found for {imdbid}')
             continue
 
         if not store_results(scored_results, imdbid):
@@ -319,7 +319,7 @@ default False>
     '''
     today = datetime.date.today()
 
-    logging.info('{} results found for {}. Storing results.'.format(len(results), imdbid))
+    logging.info(f'{len(results)} results found for {imdbid}. Storing results.')
 
     BATCH_DB_STRING = []
 
@@ -352,7 +352,7 @@ def get_source(ptn_data):
     Returns str source based on core.SOURCES
     '''
 
-    logging.info('Determining source media for {}'.format(ptn_data))
+    logging.info(f'Determining source media for {ptn_data}')
 
     if not 'resolution' in ptn_data:
         resolution = 'SD'
@@ -370,8 +370,8 @@ def get_source(ptn_data):
         parsed_quality = ptn_data['quality'].lower()
         for source, aliases in core.CONFIG['Quality']['Aliases'].items():
             if re.search(r"\b(%s)\b" % '|'.join(aliases), parsed_quality):
-                src = '{}-{}'.format(source, resolution)
-                logging.info('Source media determined as {}'.format(src))
+                src = f'{source}-{resolution}'
+                logging.info(f'Source media determined as {src}')
                 return src
 
     # sometimes PTN doesn't find quality, but aliases may match with excess
@@ -379,12 +379,12 @@ def get_source(ptn_data):
         parsed_quality = ' '.join(ptn_data['excess']).lower()
         for source, aliases in core.CONFIG['Quality']['Aliases'].items():
             if re.search(r"\b(%s)\b" % '|'.join(aliases), parsed_quality):
-                src = '{}-{}'.format(source, resolution)
-                logging.info('Source media determined as {}'.format(src))
+                src = f'{source}-{resolution}'
+                logging.info(f'Source media determined as {src}')
                 return src
 
     src = 'Unknown'
-    logging.info('Source media determined as {}'.format(src))
+    logging.info(f'Source media determined as {src}')
     return src
 
 
@@ -417,7 +417,7 @@ def _get_rss_movies(movies):
 
         if status in ('Wanted', 'Found', 'Snatched'):
             rss_movies.append(i)
-            logging.info('{} {} is {}. Will look for new releases in RSS feed.'.format(title, year, status))
+            logging.info(f'{title} {year} is {status}. Will look for new releases in RSS feed.')
         elif status == 'Finished' and keepsearching is True:
             if not i['finished_date']:
                 continue

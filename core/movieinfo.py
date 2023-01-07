@@ -57,7 +57,7 @@ class TheMovieDatabase:
         Returns list of dicts of individual movies from the find_x function.
         '''
 
-        logging.info('Searching TheMovieDB for {}'.format(search_term))
+        logging.info(f'Searching TheMovieDB for {search_term}')
 
         if re.match('^tt[0-9]{7,9}$', search_term):
             movies = TheMovieDatabase._search_imdbid(search_term)
@@ -72,7 +72,7 @@ class TheMovieDatabase:
             movies = TheMovieDatabase._search_title(search_term)
 
         if not movies:
-            logging.info('Nothing found on TheMovieDatabase for {}'.format(search_term))
+            logging.info(f'Nothing found on TheMovieDatabase for {search_term}')
             return []
         if single:
             return movies[0:1]
@@ -89,18 +89,18 @@ class TheMovieDatabase:
         Returns list of results
         '''
 
-        logging.info('Searching TheMovieDB for title: {}.'.format(title))
+        logging.info(f'Searching TheMovieDB for title: {title}.')
 
         title = Url.normalize(title)
 
         url = 'https://api.themoviedb.org/3/search/movie?page=1&include_adult={}&'.format('true' if core.CONFIG['Search']['allowadult'] else 'false')
         if len(title) > 4 and title[-4:].isdigit():
-            query = 'query={}&year={}'.format(title[:-5], title[-4:])
+            query = f'query={title[:-5]}&year={title[-4:]}'
         else:
-            query = 'query={}'.format(title)
+            query = f'query={title}'
 
         url = url + query
-        logging.info('Searching TMDB {}'.format(url))
+        logging.info(f'Searching TMDB {url}')
         url = url + '&api_key={}'.format(_k(b'tmdb'))
 
         TheMovieDatabase._use_token()
@@ -125,11 +125,11 @@ class TheMovieDatabase:
         Returns list of results
         '''
 
-        logging.info('Searching TheMovieDB for IMDB ID: {}.'.format(imdbid))
+        logging.info(f'Searching TheMovieDB for IMDB ID: {imdbid}.')
 
-        url = 'https://api.themoviedb.org/3/find/{}?language=en-US&external_source=imdb_id&append_to_response=alternative_titles,external_ids,release_dates'.format(imdbid)
+        url = f'https://api.themoviedb.org/3/find/{imdbid}?language=en-US&external_source=imdb_id&append_to_response=alternative_titles,external_ids,release_dates'
 
-        logging.info('Searching TMDB {}'.format(url))
+        logging.info(f'Searching TMDB {url}')
         url = url + '&api_key={}'.format(_k(b'tmdb'))
 
         TheMovieDatabase._use_token()
@@ -156,13 +156,13 @@ class TheMovieDatabase:
         Returns list of results
         '''
 
-        logging.info('Searching TheMovieDB for TMDB ID: {}.'.format(tmdbid))
+        logging.info(f'Searching TheMovieDB for TMDB ID: {tmdbid}.')
 
-        url = 'https://api.themoviedb.org/3/movie/{}?language=en-US&append_to_response=alternative_titles,external_ids,release_dates'.format(tmdbid)
+        url = f'https://api.themoviedb.org/3/movie/{tmdbid}?language=en-US&append_to_response=alternative_titles,external_ids,release_dates'
 
         if (language):
             url += ',translations'
-        logging.info('Searching TMDB {}'.format(url))
+        logging.info(f'Searching TMDB {url}')
         url += '&api_key={}'.format(_k(b'tmdb'))
 
         TheMovieDatabase._use_token()
@@ -170,7 +170,7 @@ class TheMovieDatabase:
         try:
             response = Url.open(url)
             if response.status_code != 200:
-                logging.warning('Unable to reach TMDB, error {}'.format(response.status_code))
+                logging.warning(f'Unable to reach TMDB, error {response.status_code}')
                 return []
             else:
                 results = json.loads(response.text)
@@ -202,7 +202,7 @@ class TheMovieDatabase:
         lang, country = language.split('-')
         if result['original_language'] == lang:
             result['title'] = result['original_title']
-            logging.debug('Requested lang {} is original language'.format(lang))
+            logging.debug(f'Requested lang {lang} is original language')
         else:
             result['lang_titles'] = set()
             for title in result.get('alternative_titles', {}).get('titles', []):
@@ -212,7 +212,7 @@ class TheMovieDatabase:
 
         for translation in result.get('translations', {}).get('translations', []):
             if translation['iso_3166_1'] == country and translation['iso_639_1'] == lang:
-                logging.debug('Found translation for lang {}-{}'.format(lang, country))
+                logging.debug(f'Found translation for lang {lang}-{country}')
                 if 'lang_titles' in result and translation['data'].get('title'):
                     result['lang_titles'].add(translation['data']['title'])
                 if translation['data'].get('overview'):
@@ -296,9 +296,9 @@ class TheMovieDatabase:
         if cat == 'similar':
             if tmdbid is None:
                 return []
-            url = 'https://api.themoviedb.org/3/movie/{}/similar?&language=en-US&page=1'.format(tmdbid)
+            url = f'https://api.themoviedb.org/3/movie/{tmdbid}/similar?&language=en-US&page=1'
         else:
-            url = 'https://api.themoviedb.org/3/movie/{}?language=en-US&page=1'.format(cat)
+            url = f'https://api.themoviedb.org/3/movie/{cat}?language=en-US&page=1'
 
         url += '&api_key={}'.format(_k(b'tmdb'))
 
@@ -312,7 +312,7 @@ class TheMovieDatabase:
             else:
                 return results['results']
         except Exception as e:
-            logging.error('Unable to read {} movies from TheMovieDB.'.format(cat), exc_info=True)
+            logging.error(f'Unable to read {cat} movies from TheMovieDB.', exc_info=True)
             return []
 
 
@@ -329,7 +329,7 @@ class YouTube:
         Returns str
         '''
 
-        logging.info('Getting trailer url from YouTube for {}'.format(title_date))
+        logging.info(f'Getting trailer url from YouTube for {title_date}')
 
         search_term = Url.normalize(title_date + '+trailer')
 
@@ -367,15 +367,15 @@ class Poster:
         Does not return
         '''
 
-        logging.info('Downloading poster for {}.'.format(imdbid))
+        logging.info(f'Downloading poster for {imdbid}.')
 
-        new_poster_path = os.path.join(Poster.folder, '{}.jpg'.format(imdbid))
+        new_poster_path = os.path.join(Poster.folder, f'{imdbid}.jpg')
 
         if os.path.exists(new_poster_path):
-            logging.warning('{} already exists.'.format(new_poster_path))
+            logging.warning(f'{new_poster_path} already exists.')
             return
         else:
-            logging.info('Saving poster to {}'.format(new_poster_path))
+            logging.info(f'Saving poster to {new_poster_path}')
 
             try:
                 poster_bytes = Url.open(poster, stream=True).content
@@ -395,7 +395,7 @@ class Poster:
                 logging.error('Unable to save poster to disk.', exc_info=True)
                 return
 
-            logging.info('Poster saved to {}'.format(new_poster_path))
+            logging.info(f'Poster saved to {new_poster_path}')
 
     @staticmethod
     def remove(imdbid):
@@ -405,9 +405,9 @@ class Poster:
         Does not return
         '''
 
-        logging.info('Removing poster for {}'.format(imdbid))
-        path = os.path.join(Poster.folder, '{}.jpg'.format(imdbid))
+        logging.info(f'Removing poster for {imdbid}')
+        path = os.path.join(Poster.folder, f'{imdbid}.jpg')
         if os.path.exists(path):
             os.remove(path)
         else:
-            logging.warning('{} doesn\'t exist, cannot remove.'.format(path))
+            logging.warning(f'{path} doesn\'t exist, cannot remove.')

@@ -47,7 +47,7 @@ def sync():
 
     movies = [i for i in movies if ((i['ids']['imdb'] not in library) and (i['ids']['imdb'] != 'N/A'))]
 
-    logging.info('Found {} new movies from Trakt lists.'.format(len(movies)))
+    logging.info(f'Found {len(movies)} new movies from Trakt lists.')
 
     for i in movies:
         imdbid = i['ids']['imdb']
@@ -80,13 +80,13 @@ def sync_rss():
         last_sync = record.get(list_id) or 'Sat, 01 Jan 2000 00:00:00'
         last_sync = datetime.datetime.strptime(last_sync, date_format)
 
-        logging.info('Syncing Trakt RSS watchlist {}. Last sync: {}'.format(list_id, last_sync))
+        logging.info(f'Syncing Trakt RSS watchlist {list_id}. Last sync: {last_sync}')
         try:
             feed = Url.open(url).text
             feed = re.sub(r'xmlns=".*?"', r'', feed)
             root = ET.fromstring(feed)
         except Exception as e:
-            logging.error('Trakt rss request:\n{}'.format(feed), exc_info=True)
+            logging.error(f'Trakt rss request:\n{feed}', exc_info=True)
             continue
 
         d = root.find('updated').text[:19]
@@ -110,18 +110,18 @@ def sync_rss():
                             year += i
                     year = int(year)
 
-                    logging.info('Searching TheMovieDatabase for {} {}'.format(title, year))
-                    movie = Manage.tmdb._search_title('{} {}'.format(title, year))[0]
+                    logging.info(f'Searching TheMovieDatabase for {title} {year}')
+                    movie = Manage.tmdb._search_title(f'{title} {year}')[0]
                     if movie:
                         movie['origin'] = 'Trakt'
-                        logging.info('Found new watchlist movie {} {}'.format(title, year))
+                        logging.info(f'Found new watchlist movie {title} {year}')
 
                         r = Manage.add_movie(movie)
 
                         if r['response'] and core.CONFIG['Search']['searchafteradd'] and movie['year'] != 'N/A':
                             searcher.search(movie)
                     else:
-                        logging.warning('Unable to find {} {} on TheMovieDatabase'.format(title, year))
+                        logging.warning(f'Unable to find {title} {year} on TheMovieDatabase')
 
             except Exception as e:
                 logging.error('Unable to parse Trakt RSS list entry.', exc_info=True)
@@ -147,7 +147,7 @@ def get_list(list_name, min_score=0, length=10):
     Returns list of dicts of movie info
     '''
 
-    logging.info('Getting Trakt list {}'.format(list_name))
+    logging.info(f'Getting Trakt list {list_name}')
 
     headers = {'Content-Type': 'application/json',
                'trakt-api-version': '2',
@@ -155,10 +155,10 @@ def get_list(list_name, min_score=0, length=10):
                }
 
     if list_name not in ('trending', 'popular', 'watched', 'collected', 'anticipated', 'boxoffice'):
-        logging.error('Invalid list_name {}'.format(list_name))
+        logging.error(f'Invalid list_name {list_name}')
         return []
 
-    url = 'https://api.trakt.tv/movies/{}/?extended=full'.format(list_name)
+    url = f'https://api.trakt.tv/movies/{list_name}/?extended=full'
 
     try:
         r = Url.open(url, headers=headers)

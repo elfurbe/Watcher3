@@ -32,11 +32,11 @@ def sync():
 
     for url in core.CONFIG['Search']['Watchlists']['imdbcsv']:
         if url[-6:] not in ('export', 'export/'):
-            logging.warning('{} does not look like a valid imdb list'.format(url))
+            logging.warning(f'{url} does not look like a valid imdb list')
             continue
 
         list_id = 'ls' + ''.join(filter(str.isdigit, url))
-        logging.info('Syncing rss IMDB watchlist {}'.format(list_id))
+        logging.info(f'Syncing rss IMDB watchlist {list_id}')
 
         last_sync = datetime.strptime((record.get(list_id) or '2000-01-01'), date_format)
 
@@ -58,13 +58,13 @@ def sync():
                     movies_to_add.append(imdbid)
 
         except Exception as e:
-            logging.warning('Unable to sync list {}'.format(list_id))
+            logging.warning(f'Unable to sync list {list_id}')
 
     movies = []
     for imdbid in movies_to_add:
         movie = TheMovieDatabase._search_imdbid(imdbid)
         if not movie:
-            logging.warning('{} not found on TheMovieDB. Cannot add.'.format(imdbid))
+            logging.warning(f'{imdbid} not found on TheMovieDB. Cannot add.')
             continue
         else:
             movie = movie[0]

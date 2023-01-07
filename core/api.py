@@ -315,7 +315,7 @@ class API:
 
         mode = params.pop('mode')
         if not hasattr(self, mode):
-            return {'response': False, 'error': 'unknown method call: {}'.format(mode)}
+            return {'response': False, 'error': f'unknown method call: {mode}'}
         else:
             return getattr(self, mode)(params)
 
@@ -331,14 +331,14 @@ class API:
         Returns dict
         '''
 
-        logging.info('API request movie list -- filters: {}'.format(filters))
+        logging.info(f'API request movie list -- filters: {filters}')
         movies = core.sql.get_user_movies()
         if not movies:
             return {'response': True, 'movies': []}
 
         for i in filters.keys():
             if i not in core.sql.MOVIES.columns:
-                return {'response': False, 'error': 'Invalid filter key: {}'.format(i)}
+                return {'response': False, 'error': f'Invalid filter key: {i}'}
 
         return {'response': True, 'movies': [i for i in movies if all(i[k] == v for k, v in filters.items())]}
 
@@ -365,20 +365,20 @@ class API:
 
         if params.get('imdbid'):
             imdbid = params['imdbid']
-            logging.info('API request add movie imdb {}'.format(imdbid))
+            logging.info(f'API request add movie imdb {imdbid}')
             movie = TheMovieDatabase._search_imdbid(imdbid)
             if not movie:
-                return {'response': False, 'error': 'Cannot find {} on TMDB'.format(imdbid)}
+                return {'response': False, 'error': f'Cannot find {imdbid} on TMDB'}
             else:
                 movie = movie[0]
                 movie['imdbid'] = imdbid
         elif params.get('tmdbid'):
             tmdbid = params['tmdbid']
-            logging.info('API request add movie tmdb {}'.format(tmdbid))
+            logging.info(f'API request add movie tmdb {tmdbid}')
             movie = TheMovieDatabase._search_tmdbid(tmdbid)
 
             if not movie:
-                return {'response': False, 'error': 'Cannot find {} on TMDB'.format(tmdbid)}
+                return {'response': False, 'error': f'Cannot find {tmdbid} on TMDB'}
             else:
                 movie = movie[0]
 
@@ -404,19 +404,19 @@ class API:
         if not imdbid:
             return {'response': False, 'error': 'no imdbid supplied'}
 
-        logging.info('API request remove movie {}'.format(imdbid))
+        logging.info(f'API request remove movie {imdbid}')
 
         if params['delete_file']:
             f = core.sql.get_movie_details('imdbid', imdbid).get('finished_file')
             if f:
                 try:
-                    logging.debug('Finished file for {} is {}'.format(imdbid, f))
+                    logging.debug(f'Finished file for {imdbid} is {f}')
                     os.unlink(f)
                     # clear finished_* columns, in case remove_movie fails
                     core.sql.update_multiple_values('MOVIES', {'finished_date': None, 'finished_score': None,
                                                                'finished_file': None}, 'imdbid', imdbid)
                 except Exception as e:
-                    error = 'Unable to delete file {}'.format(f)
+                    error = f'Unable to delete file {f}'
                     logging.error(error, exc_info=True)
                     return {'response': False, 'error': error}
 
@@ -490,7 +490,7 @@ class API:
         if result:
             return {'response': True, 'tmdb_data': result}
         else:
-            return {'response': False, 'error': 'Unable to find {} on TMDB.'.format(tmdbid or imdbid)}
+            return {'response': False, 'error': f'Unable to find {tmdbid or imdbid} on TMDB.'}
 
     @api_json_out
     def update_movie_options(self, params):
@@ -512,7 +512,7 @@ class API:
 
         movie = core.sql.get_movie_details('imdbid', imdbid)
         if not movie:
-            return {'response': False, 'error': 'no movie for {}'.format(imdbid)}
+            return {'response': False, 'error': f'no movie for {imdbid}'}
 
         quality = params.get('quality')
         category = params.get('category')
@@ -542,7 +542,7 @@ class API:
         if not file:
             return {'response': False, 'error': 'no file supplied'}
 
-        logging.info('Changing finished_file to {} for {}'.format(file, imdbid))
+        logging.info(f'Changing finished_file to {file} for {imdbid}')
         if core.sql.update('MOVIES', 'finished_file', file, 'imdbid', imdbid):
             return {'response': True, 'message': 'Finished file updated'}
         else:
@@ -561,7 +561,7 @@ class API:
 
         movie = core.sql.get_movie_details('imdbid', imdbid)
         if not movie:
-            return {'response': False, 'error': 'no movie for {}'.format(imdbid)}
+            return {'response': False, 'error': f'no movie for {imdbid}'}
 
         results = Manage.search_results(imdbid, quality=movie.get('quality'))
         return {'response': True, 'results': results}
@@ -604,14 +604,14 @@ class API:
         if kind == 'nzb' and not usenet_enabled:
             return {'response': False, 'error': 'Link is NZB but no Usent client is enabled.'}
         elif kind in ('torrent', 'magnet') and not torrent_enabled:
-            return {'response': False, 'error': 'Link is {} but no Torrent client is enabled.'.format(kind)}
+            return {'response': False, 'error': f'Link is {kind} but no Torrent client is enabled.'}
 
         data = dict(core.sql.get_single_search_result('guid', guid))
         if data:
             data['year'] = core.sql.get_movie_details('imdbid', data['imdbid'])['year']
             return snatcher.download(data)
         else:
-            return {'response': False, 'error': 'Unable to read {} details from database'.format(kind)}
+            return {'response': False, 'error': f'Unable to read {kind} details from database'}
 
     @api_json_out
     def version(self, *args):

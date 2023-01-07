@@ -24,7 +24,7 @@ def test_connection(data):
     host = data['host']
     port = data['port']
 
-    url = 'scgi://{}:{}'.format(host, port)
+    url = f'scgi://{host}:{port}'
 
     client = rtorrent_xmlrpc.SCGIServerProxy(url, encoding='utf-8')
 
@@ -73,7 +73,7 @@ def add_torrent(data):
                     return {'response': True, 'downloadid': downloadid}
                 time.sleep(1)
                 t += 1
-            logging.error('Torrent hash ({}) not found in rTorrent after 10 seconds, cannot apply label.'.format(downloadid))
+            logging.error(f'Torrent hash ({downloadid}) not found in rTorrent after 10 seconds, cannot apply label.')
             return {'response': False, 'error': 'Torrent hash not found in rTorrent after 10 seconds, cannot apply label.'}
         else:
             return {'response': True, 'downloadid': downloadid}
@@ -89,7 +89,7 @@ def cancel_download(downloadid):
 
     Returns bool
     '''
-    logging.info('Cancelling download # {} in rTorrent SCGI.'.format(downloadid))
+    logging.info(f'Cancelling download # {downloadid} in rTorrent SCGI.')
 
     conf = core.CONFIG['Downloader']['Torrent']['rTorrentSCGI']
 

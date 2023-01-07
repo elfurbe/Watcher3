@@ -49,10 +49,10 @@ def backlog_search(movie):
 
     title = movie['title']
     year = str(movie['year'])
-    title_year = '{} {}'.format(title, year)
+    title_year = f'{title} {year}'
     imdbid = movie['imdbid']
 
-    logging.info('Checking predb.me for verified releases for {}.'.format(title))
+    logging.info(f'Checking predb.me for verified releases for {title}.')
 
     predb_titles = _search_db(title_year)
 
@@ -60,7 +60,7 @@ def backlog_search(movie):
 
     if predb_titles:
         if _fuzzy_match(predb_titles, title, year):
-            logging.info('{} {} found on predb.me.'.format(title, year))
+            logging.info(f'{title} {year} found on predb.me.')
             db_update['predb'] = 'found'
 
     movie.update(db_update)
@@ -81,7 +81,7 @@ def _search_db(title_year):
     categories = 'movies'
     if core.CONFIG['Search'].get('predb_unknown'):
         categories += ',unknown'
-    url = 'http://predb.me/?cats={}&search={}&rss=1'.format(categories, title_year)
+    url = f'http://predb.me/?cats={categories}&search={title_year}&rss=1'
 
     try:
         response = Url.open(url).text
@@ -110,7 +110,7 @@ def _search_rss(movies):
         categories = 'movies'
         if core.CONFIG['Search'].get('predb_unknown'):
             categories += ',unknown'
-        feed = Url.open('https://predb.me/?cats={}&rss=1'.format(categories)).text
+        feed = Url.open(f'https://predb.me/?cats={categories}&rss=1').text
         items = _parse_predb_xml(feed)
 
         for movie in movies:
@@ -119,7 +119,7 @@ def _search_rss(movies):
             imdbid = movie['imdbid']
 
             if _fuzzy_match(items, title, year):
-                logging.info('{} {} found on predb.me RSS.'.format(title, year))
+                logging.info(f'{title} {year} found on predb.me RSS.')
                 core.sql.update('MOVIES', 'predb', 'found', 'imdbid', imdbid)
                 continue
     except Exception as e:
@@ -155,13 +155,13 @@ def _fuzzy_match(predb_titles, title, year):
     Returns bool
     '''
 
-    movie = Url.normalize('{}.{}'.format(title, year), ascii_only=True).replace(' ', '.')
+    movie = Url.normalize(f'{title}.{year}', ascii_only=True).replace(' ', '.')
     for pdb in predb_titles:
         if year not in pdb:
             continue
         pdb = pdb.split(year)[0] + year
         match = lm.score(pdb.replace(' ', '.'), movie) * 100
         if match > 60:
-            logging.debug('{} matches {} at {}%'.format(pdb, movie, int(match)))
+            logging.debug(f'{pdb} matches {movie} at {int(match)}%')
             return True
     return False

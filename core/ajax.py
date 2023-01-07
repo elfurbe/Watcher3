@@ -84,7 +84,7 @@ class Ajax:
         if results:
             Manage.add_status_to_search_movies(results)
         else:
-            logging.info('No Results found for {}'.format(search_term))
+            logging.info(f'No Results found for {search_term}')
 
         return results
 
@@ -99,7 +99,7 @@ class Ajax:
         if results:
             Manage.add_status_to_search_movies(results)
         else:
-            logging.info('No Results found for {}'.format(cat))
+            logging.info(f'No Results found for {cat}')
 
         return results
 
@@ -139,7 +139,7 @@ class Ajax:
 
         Returns str
         '''
-        return YouTube.trailer('{} {}'.format(title, year))
+        return YouTube.trailer(f'{title} {year}')
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -215,18 +215,18 @@ class Ajax:
         Returns dict ajax-style response
         '''
 
-        logging.info('Deleting file for {}.'.format(imdbid))
+        logging.info(f'Deleting file for {imdbid}.')
 
         f = core.sql.get_movie_details('imdbid', imdbid).get('finished_file')
 
         try:
-            logging.debug('Finished file for {} is {}'.format(imdbid, f))
+            logging.debug(f'Finished file for {imdbid} is {f}')
             if os.path.exists(f):
                 os.unlink(f)
             core.sql.update_multiple_values('MOVIES', {'finished_date': None, 'finished_score': None, 'finished_file': None}, 'imdbid', imdbid)
             return {'response': True, 'message': _('Deleted movie file {}.').format(f)}
         except Exception as e:
-            logging.error('Unable to delete file {}'.format(f), exc_info=True)
+            logging.error(f'Unable to delete file {f}', exc_info=True)
             return {'response': False, 'error': str(e)}
 
     @cherrypy.expose
@@ -239,7 +239,7 @@ class Ajax:
 
         Returns dict ajax-style response
         '''
-        logging.info('Starting user-requested backlog search for {}'.format(imdbid))
+        logging.info(f'Starting user-requested backlog search for {imdbid}')
 
         movie = core.sql.get_movie_details('imdbid', imdbid)
 
@@ -534,7 +534,7 @@ class Ajax:
         if not Manage.update_movie_options(imdbid, quality, category, language, title, filters):
             return {'response': False, 'error': Errors.database_write}
 
-        logging.info('Updating status to {} for {}.'.format(status, imdbid))
+        logging.info(f'Updating status to {status} for {imdbid}.')
 
         if status == 'Automatic':
             if not core.sql.update('MOVIES', 'status', 'Waiting', 'imdbid', imdbid):
@@ -562,7 +562,7 @@ class Ajax:
         Returns str
         '''
 
-        logging.info('Dumping log file {} to text.'.format(logfile))
+        logging.info(f'Dumping log file {logfile} to text.')
 
         with open(os.path.join(core.LOG_DIR, logfile)) as f:
             log_text = ''.join(reversed(f.readlines()))
@@ -598,7 +598,7 @@ class Ajax:
         '''
         c = os.path.join(core.PLUGIN_DIR, folder, conf)
 
-        logging.info('Reading plugin config {}'.format(c))
+        logging.info(f'Reading plugin config {c}')
 
         try:
             with open(c) as f:
@@ -622,7 +622,7 @@ class Ajax:
 
         conf_file = os.path.join(core.PROG_PATH, core.PLUGIN_DIR, folder, filename)
 
-        logging.info('Saving plugin config as {}'.format(conf_file))
+        logging.info(f'Saving plugin config as {conf_file}')
 
         config = json.loads(config)
 
@@ -686,9 +686,9 @@ class Ajax:
             for f in files:
                 fd = os.path.dirname(f)
                 if fd in library_file_dirs:
-                    logging.info('## {} directory already in library'.format(f))
+                    logging.info(f'## {f} directory already in library')
                     for x in library_file_dirs[fd]:
-                        logging.info('## {}'.format(x))
+                        logging.info(f'## {x}')
 
             # Remove the files which have duplicate dirs (likely to be the same imdbid)
             # This avoids doing a metadata probe which is then ignored
@@ -710,9 +710,9 @@ class Ajax:
             yield json.dumps({'response': None})
             raise StopIteration()
 
-        logging.info('Parsing {} directory scan results.'.format(length))
+        logging.info(f'Parsing {length} directory scan results.')
         for index, path in enumerate(files):
-            logging.info('Gathering metatadata for {}'.format(path))
+            logging.info(f'Gathering metatadata for {path}')
             metadata = {}
             response = {'progress': [index + 1, length]}
             try:
@@ -793,7 +793,7 @@ class Ajax:
         progress = 1
 
         if corrected_movies:
-            logging.info('{} corrected movies, gathering metadata.'.format(len(corrected_movies)))
+            logging.info(f'{len(corrected_movies)} corrected movies, gathering metadata.')
             for data in corrected_movies:
                 tmdbdata = TheMovieDatabase._search_tmdbid(data['tmdbid'])
                 if tmdbdata:
@@ -806,7 +806,7 @@ class Ajax:
                     yield json.dumps({'response': False, 'movie': data, 'progress': [progress, length], 'error': Errors.tmdb_not_found.format(data['tmdbid'])})
                     progress += 1
 
-        logging.info('Adding {} directory scan movies to library.'.format(len(movie_data)))
+        logging.info(f'Adding {len(movie_data)} directory scan movies to library.')
         for movie in movie_data:
             if movie.get('imdbid'):
                 movie['status'] = 'Disabled'
@@ -915,7 +915,7 @@ class Ajax:
         if result:
             return {'response': True, 'tmdb_data': result}
         else:
-            return {'response': False, 'error': 'Unable to find {} on TMDB.'.format(tmdbid or imdbid)}
+            return {'response': False, 'error': f'Unable to find {tmdbid or imdbid} on TMDB.'}
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -983,7 +983,7 @@ class Ajax:
         length = len(movies)
         progress = 1
 
-        logging.info('Adding {} Kodi movies to library.'.format(length))
+        logging.info(f'Adding {length} Kodi movies to library.')
 
         for movie in movies:
 
@@ -1081,7 +1081,7 @@ class Ajax:
         progress = 1
 
         if corrected_movies:
-            logging.info('Adding {} Plex movies to library.'.format(len(corrected_movies)))
+            logging.info(f'Adding {len(corrected_movies)} Plex movies to library.')
             for movie in corrected_movies:
                 tmdbdata = TheMovieDatabase._search_imdbid(movie['imdbid'])
                 if tmdbdata:
@@ -1094,7 +1094,7 @@ class Ajax:
                     yield json.dumps({'response': False, 'movie': movie, 'progress': [progress, length], 'error': Errors.tmdb_not_found.format(movie['imdbid'])})
                     progress += 1
 
-        logging.info('Adding {} Plex movies to library.'.format(length))
+        logging.info(f'Adding {length} Plex movies to library.')
         for movie in movie_data:
             logging.info('Importing Plex movie {} {}'.format(movie.get('title', ''), movie.get('year', '')))
 
@@ -1165,10 +1165,10 @@ class Ajax:
         Returns dict ajax-style response
         '''
 
-        url = '{}/api/{}/movie.list/'.format(url, apikey)
+        url = f'{url}/api/{apikey}/movie.list/'
 
         if not url.startswith('http'):
-            url = 'http://{}'.format(url)
+            url = f'http://{url}'
 
         return library.ImportCPLibrary.get_movies(url)
 
@@ -1190,7 +1190,7 @@ class Ajax:
         length = len(wanted) + len(finished)
         progress = 1
 
-        logging.info('Adding {} Wanted CouchPotato movies to library.'.format(len(wanted)))
+        logging.info(f'Adding {len(wanted)} Wanted CouchPotato movies to library.')
         for movie in wanted:
             response = Manage.add_movie(movie, full_metadata=True)
             if response['response'] is True:
@@ -1202,7 +1202,7 @@ class Ajax:
                 progress += 1
                 continue
 
-        logging.info('Adding {} Wanted CouchPotato movies to library.'.format(len(finished)))
+        logging.info(f'Adding {len(finished)} Wanted CouchPotato movies to library.')
         for movie in finished:
             movie['predb'] = 'found'
             movie['status'] = 'Disabled'
@@ -1241,7 +1241,7 @@ class Ajax:
 
         movies = json.loads(movies)
 
-        logging.info('Performing bulk backlog search for {} movies.'.format(len(movies)))
+        logging.info(f'Performing bulk backlog search for {len(movies)} movies.')
 
         ids = [i['imdbid'] for i in movies]
 
@@ -1269,7 +1269,7 @@ class Ajax:
 
         movies = json.loads(movies)
 
-        logging.info('Performing bulk metadata update for {} movies.'.format(len(movies)))
+        logging.info(f'Performing bulk metadata update for {len(movies)} movies.')
 
         for i, movie in enumerate(movies):
             r = Metadata.update(movie.get('imdbid'), movie.get('tmdbid'))
@@ -1343,7 +1343,7 @@ class Ajax:
 
         movies = json.loads(movies)
 
-        logging.info('Resetting status for {} movies.'.format(len(movies)))
+        logging.info(f'Resetting status for {len(movies)} movies.')
 
         for i, movie in enumerate(movies):
             logging.debug('Resetting {}'.format(movie['imdbid']))
@@ -1380,7 +1380,7 @@ class Ajax:
 
         movies = json.loads(movies)
 
-        logging.info('Removing {} movies from library.'.format(len(movies)))
+        logging.info(f'Removing {len(movies)} movies from library.')
 
         for i, movie in enumerate(movies):
             r = self.remove_movie(movie['imdbid'])
@@ -1427,18 +1427,18 @@ class Ajax:
         logging.info('Restoring backup from uploaded zip.')
         n = datetime.datetime.today().microsecond
 
-        tmp_zip = os.path.join(core.PROG_PATH, 'restore_{}.zip'.format(n))
+        tmp_zip = os.path.join(core.PROG_PATH, f'restore_{n}.zip')
 
         try:
             with open(tmp_zip, 'wb') as f:
                 f.seek(0)
                 f.write(fileUpload.file.read())
 
-            logging.info('Restore zip temporarily stored as {}.'.format(tmp_zip))
+            logging.info(f'Restore zip temporarily stored as {tmp_zip}.')
 
             backup.restore(require_confirm=False, file=tmp_zip)
 
-            logging.info('Removing temporary zip {}'.format(tmp_zip))
+            logging.info(f'Removing temporary zip {tmp_zip}')
             os.unlink(tmp_zip)
 
         except Exception as e:
@@ -1461,7 +1461,7 @@ class Ajax:
         '''
 
         try:
-            logging.info('Manually executing task {}.'.format(name))
+            logging.info(f'Manually executing task {name}.')
             task = core.scheduler_plugin.task_list[name]
             task.now()
 

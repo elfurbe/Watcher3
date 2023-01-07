@@ -16,10 +16,10 @@ def base_url():
 def search(imdbid, term, ignore_if_imdbid_cap = False):
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
-    logging.info('Performing backlog search on Torrentz2 for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on Torrentz2 for {imdbid}.')
 
     host = base_url()
-    url = '{}/feed?f={}'.format(host, term)
+    url = f'{host}/feed?f={term}'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -44,7 +44,7 @@ def get_rss():
     logging.info('Fetching latest RSS from Torrentz2.')
 
     host = base_url()
-    url = '{}/feed?f=movies'.format(host)
+    url = f'{host}/feed?f=movies'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -110,5 +110,5 @@ def _parse(xml, imdbid):
             logging.error('Error parsing Torrentz2 XML.', exc_info=True)
             continue
 
-    logging.info('Found {} results from Torrentz2.'.format(len(results)))
+    logging.info(f'Found {len(results)} results from Torrentz2.')
     return results

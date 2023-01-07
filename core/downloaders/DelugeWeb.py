@@ -29,7 +29,7 @@ def test_connection(data):
     port = data['port']
     password = data['pass']
 
-    url = '{}:{}/json'.format(host, port)
+    url = f'{host}:{port}/json'
 
     return _login(url, password)
 
@@ -50,7 +50,7 @@ def add_torrent(data):
 
     host = conf['host']
     port = conf['port']
-    url = '{}:{}/json'.format(host, port)
+    url = f'{host}:{port}/json'
 
     priority_keys = {
         'Low': 64,
@@ -134,7 +134,7 @@ def _set_label(torrent, label, url):
 
     label = label_fix.sub('', label.lower()).replace(' ', '')
 
-    logging.info('Applying label {} to torrent {} in Deluge Web UI.'.format(label, torrent))
+    logging.info(f'Applying label {label} to torrent {torrent} in Deluge Web UI.')
 
     command = {'method': 'label.get_labels',
                'params': [],
@@ -150,7 +150,7 @@ def _set_label(torrent, label, url):
         return False
 
     if label not in deluge_labels:
-        logging.info('Adding label {} to Deluge.'.format(label))
+        logging.info(f'Adding label {label} to Deluge.')
         command = {'method': 'label.add',
                    'params': [label],
                    'id': command_id
@@ -159,7 +159,7 @@ def _set_label(torrent, label, url):
         try:
             sc = Url.open(url, post_data=json.dumps(command), headers=headers).status_code
             if sc != 200:
-                logging.error('Deluge Web UI response {}.'.format(sc))
+                logging.error(f'Deluge Web UI response {sc}.')
                 return False
         except Exception as e:
             logging.error('Delugeweb get_labels.', exc_info=True)
@@ -172,7 +172,7 @@ def _set_label(torrent, label, url):
         command_id += 1
         sc = Url.open(url, post_data=json.dumps(command), headers=headers).status_code
         if sc != 200:
-            logging.error('Deluge Web UI response {}.'.format(sc))
+            logging.error(f'Deluge Web UI response {sc}.')
             return False
     except Exception as e:
         logging.error('Delugeweb set_torrent.', exc_info=True)
@@ -258,19 +258,19 @@ def _login(url, password):
         raise
     except Exception as e:
         logging.error('DelugeWeb test_connection', exc_info=True)
-        return '{}.'.format(e)
+        return f'{e}.'
 
 
 def cancel_download(downloadid):
     global command_id
 
-    logging.info('Cancelling download {} in Deluge Web UI'.format(downloadid))
+    logging.info(f'Cancelling download {downloadid} in Deluge Web UI')
 
     conf = core.CONFIG['Downloader']['Torrent']['DelugeWeb']
 
     host = conf['host']
     port = conf['port']
-    url = '{}:{}/json'.format(host, port)
+    url = f'{host}:{port}/json'
 
     if cookie is None:
         _login(url, conf['pass'])
@@ -301,11 +301,11 @@ def get_torrents_status(stalled_for=None, progress={}):
     global command_id
     conf = core.CONFIG['Downloader']['Torrent']['DelugeWeb']
 
-    logging.info('Get torrents from DelugeWeb: {}'.format(list(progress.keys())))
+    logging.info(f'Get torrents from DelugeWeb: {list(progress.keys())}')
 
     host = conf['host']
     port = conf['port']
-    url = '{}:{}/json'.format(host, port)
+    url = f'{host}:{port}/json'
 
     if cookie is None:
         _login(url, conf['pass'])
@@ -326,7 +326,7 @@ def get_torrents_status(stalled_for=None, progress={}):
         now = int(datetime.timestamp(datetime.now()))
         response = Url.open(url, post_data=post_data, headers=headers)
         response = json.loads(response.text)
-        logging.debug('Response keys: {}'.format(list(response.keys())))
+        logging.debug(f'Response keys: {list(response.keys())}')
         logging.debug(response)
         for id, torrent in response.get('result', {}).items():
             # deluge return empty hash for every requested hash, even when it's missing

@@ -18,10 +18,10 @@ def search(imdbid, term, ignore_if_imdbid_cap = False):
         return []
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
-    logging.info('Performing backlog search on ThePirateBay for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on ThePirateBay for {imdbid}.')
 
     host = base_url()
-    url = '{}/q.php?q={}'.format(host, imdbid)
+    url = f'{host}/q.php?q={imdbid}'
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
             response = Url.open(url, proxy_bypass=True).text
@@ -45,7 +45,7 @@ def get_rss():
     logging.info('Fetching latest RSS from ThePirateBay.')
 
     host = base_url()
-    url = '{}/q.php?q=category:201'.format(host)
+    url = f'{host}/q.php?q=category:201'
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
             response = Url.open(url, proxy_bypass=True).text
@@ -99,5 +99,5 @@ def _parse(response, imdbid):
             logging.error('Error parsing ThePirateBay JSON.', exc_info=True)
             continue
 
-    logging.info('Found {} results from ThePirateBay.'.format(len(results)))
+    logging.info(f'Found {len(results)} results from ThePirateBay.')
     return results

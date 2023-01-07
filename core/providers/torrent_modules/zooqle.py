@@ -21,10 +21,10 @@ def base_url():
 def search(imdbid, term, ignore_if_imdbid_cap = False):
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
-    logging.info('Searching Zooqle for {}.'.format(term))
+    logging.info(f'Searching Zooqle for {term}.')
 
     host = base_url()
-    url = '{}/search?q={}&fmt=rss'.format(host, term)
+    url = f'{host}/search?q={term}&fmt=rss'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -87,5 +87,5 @@ def _parse(xml, imdbid):
             logging.error('Error parsing Zooqle XML.', exc_info=True)
             continue
 
-    logging.info('Found {} results from Zooqle.'.format(len(results)))
+    logging.info(f'Found {len(results)} results from Zooqle.')
     return results

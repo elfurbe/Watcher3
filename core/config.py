@@ -141,7 +141,7 @@ def merge_new_options():
     d = [prof.get('default') for prof in new_config['Quality']['Profiles'].values()]
     if not any(d):
         target = 'Default' if new_config['Quality']['Profiles'].get('Default') else list(new_config['Quality']['Profiles'].keys())[0]
-        print('Default Quality Profile not specified, setting *{}* to Default.'.format(target))
+        print(f'Default Quality Profile not specified, setting *{target}* to Default.')
         new_config['Quality']['Profiles'][target]['default'] = True
 
     for indexer, setting in new_config['Indexers']['Torrent'].items():

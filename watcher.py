@@ -92,7 +92,7 @@ if __name__ == '__main__':
     # set up config file on first launch
     from core import config
     if not os.path.isfile(core.CONF_FILE):
-        print('\033[33m## Config file not found. Creating new basic config {}. Please review settings. \033[0m'.format(core.CONF_FILE))
+        print(f'\033[33m## Config file not found. Creating new basic config {core.CONF_FILE}. Please review settings. \033[0m')
         config.new_config()
     else:
         print('Config file found, merging any new options.')
@@ -135,9 +135,9 @@ if __name__ == '__main__':
     if core.CONFIG['Server']['customwebroot']:
         core.URL_BASE = core.CONFIG['Server']['customwebrootpath']
 
-    core.SERVER_URL = 'http://{}:{}{}'.format(core.SERVER_ADDRESS, core.SERVER_PORT, core.URL_BASE)
+    core.SERVER_URL = f'http://{core.SERVER_ADDRESS}:{core.SERVER_PORT}{core.URL_BASE}'
 
-    root = cherrypy.tree.mount(App(), '{}/'.format(core.URL_BASE), 'core/conf_app.ini')
+    root = cherrypy.tree.mount(App(), f'{core.URL_BASE}/', 'core/conf_app.ini')
 
     # Start plugins
     if passed_args.daemon:
@@ -180,7 +180,7 @@ You may avoid this by installing the pyopenssl module.'''
     if passed_args.browser or core.CONFIG['Server']['launchbrowser']:
         logging.info('Launching web browser.')
         a = 'localhost' if core.SERVER_ADDRESS == '0.0.0.0' else core.SERVER_ADDRESS
-        webbrowser.open('http://{}:{}{}'.format(a, core.SERVER_PORT, core.URL_BASE))
+        webbrowser.open(f'http://{a}:{core.SERVER_PORT}{core.URL_BASE}')
 
     # start engine
     cherrypy.config.update('core/conf_global.ini')

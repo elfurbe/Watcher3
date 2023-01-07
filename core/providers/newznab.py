@@ -30,7 +30,7 @@ class NewzNab(NewzNabProvider):
             if indexer[2] is False:
                 continue
             url_base = indexer[0]
-            logging.info('Searching NewzNab indexer {}'.format(url_base))
+            logging.info(f'Searching NewzNab indexer {url_base}')
             if url_base[-1] != '/':
                 url_base = url_base + '/'
             apikey = indexer[1]

@@ -23,9 +23,9 @@ def test_connection(data):
     passw = data['pass']
 
     if not host.startswith('http'):
-        url = 'http://{}:{}/{}:{}/xmlrpc'.format(host, port, user, passw)
+        url = f'http://{host}:{port}/{user}:{passw}/xmlrpc'
     else:
-        url = '{}:{}/{}:{}/xmlrpc'.format(host, port, user, passw)
+        url = f'{host}:{port}/{user}:{passw}/xmlrpc'
 
     nzbg_server = ServerProxy(url)
 
@@ -36,7 +36,7 @@ def test_connection(data):
         raise
     except Exception as e:
         logging.error('Nzbget test_connection', exc_info=True)
-        return '{}.'.format(e)
+        return f'{e}.'
 
 
 def add_nzb(nzb):
@@ -56,9 +56,9 @@ def add_nzb(nzb):
     passw = conf['pass']
 
     if not host.startswith('http'):
-        url = 'http://{}:{}/{}:{}/xmlrpc'.format(host, port, user, passw)
+        url = f'http://{host}:{port}/{user}:{passw}/xmlrpc'
     else:
-        url = '{}:{}/{}:{}/xmlrpc'.format(host, port, user, passw)
+        url = f'{host}:{port}/{user}:{passw}/xmlrpc'
 
     nzbg_server = ServerProxy(url)
 
@@ -84,7 +84,7 @@ def add_nzb(nzb):
 
     try:
         response = nzbg_server.append(filename, contenturl, category, priority, False, paused, dupekey, dupescore, dupemode)
-        logging.info('NZB sent to NZBGet - downloadid {}'.format(response))
+        logging.info(f'NZB sent to NZBGet - downloadid {response}')
         return {'response': True, 'downloadid': response}
     except Exception as e:
         logging.error('Unable to add NZB to NZBGet.')
@@ -97,7 +97,7 @@ def cancel_download(downloadid):
 
     Returns bool
     '''
-    logging.info('Cancelling download # {} in NZBGet.'.format(downloadid))
+    logging.info(f'Cancelling download # {downloadid} in NZBGet.')
 
     conf = core.CONFIG['Downloader']['Usenet']['NzbGet']
 
@@ -107,9 +107,9 @@ def cancel_download(downloadid):
     passw = conf['pass']
 
     if not host.startswith('http'):
-        url = 'http://{}:{}/{}:{}/xmlrpc'.format(host, port, user, passw)
+        url = f'http://{host}:{port}/{user}:{passw}/xmlrpc'
     else:
-        url = '{}:{}/{}:{}/xmlrpc'.format(host, port, user, passw)
+        url = f'{host}:{port}/{user}:{passw}/xmlrpc'
 
     nzbg_server = ServerProxy(url)
 

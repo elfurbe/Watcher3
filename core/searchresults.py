@@ -37,7 +37,7 @@ def score(releases, imdbid=None, imported=False):
         logging.info('No releases to score.')
         return releases
 
-    logging.info('Scoring {} releases.'.format(len(releases)))
+    logging.info(f'Scoring {len(releases)} releases.')
 
     if imdbid is None and imported is False:
         logging.warning('Imdbid required if result is not library import.')
@@ -61,7 +61,7 @@ def score(releases, imdbid=None, imported=False):
         movie_details = core.sql.get_movie_details('imdbid', imdbid)
         quality_profile = movie_details['quality']
         category_name = movie_details['category']
-        logging.debug('Scoring based on quality profile {}'.format(quality_profile))
+        logging.debug(f'Scoring based on quality profile {quality_profile}')
         check_size = True
         year = movie_details.get('year')
         title = movie_details.get('title').lower()
@@ -92,7 +92,7 @@ def score(releases, imdbid=None, imported=False):
     if ignored_groups and ignored_groups != ['']:
         if title:
             ignored_groups = [word_group for word_group in ignored_groups if not all(word in title for word in word_group)]
-            logging.debug('ignored groups not in movie title: {}'.format(ignored_groups))
+            logging.debug(f'ignored groups not in movie title: {ignored_groups}')
         releases = remove_ignored(releases, ignored_groups)
 
     if required_groups and required_groups != ['']:
@@ -173,7 +173,7 @@ def remove_ignored(releases, group_list):
                 reject += 1
                 break
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
 
     return releases
 
@@ -195,7 +195,7 @@ def keep_required(releases, group_list):
     reject = 0
 
     logging.info('Filtering Required Words.')
-    logging.debug('Required Words: {}'.format(str(group_list)))
+    logging.debug(f'Required Words: {str(group_list)}')
     for r in releases:
         if r['reject_reason']:
             reject += 1
@@ -213,7 +213,7 @@ def keep_required(releases, group_list):
             r['reject_reason'] = 'required words missing'
             reject += 1
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
 
     return releases
 
@@ -245,7 +245,7 @@ def retention_check(releases):
                 result['reject_reason'] = 'older than retention ({})'.format(core.CONFIG['Search']['retention'])
                 reject += 1
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
     return releases
 
 
@@ -270,7 +270,7 @@ def seed_check(releases):
                 result['reject_reason'] = 'not enough seeds ({})'.format(core.CONFIG['Search']['mintorrentseeds'])
                 reject += 1
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
     return releases
 
 
@@ -299,7 +299,7 @@ def freeleech(releases):
             release['reject_reason'] = 'freeleech required'
             reject += 1
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
     return releases
 
 
@@ -312,13 +312,13 @@ def threshold_score(releases, attr, points, threshold):
 
     Returns list[dict]
     '''
-    logging.info('Comparing torrent {} with {}.'.format(attr, threshold))
+    logging.info(f'Comparing torrent {attr} with {threshold}.')
     for release in releases[:]:
         try:
             if attr in release and release[attr] > threshold:
                 release['score'] += points
         except TypeError:
-            logging.warn('{} is not int ({})'.format(attr, release))
+            logging.warn(f'{attr} is not int ({release})')
 
     return releases
 
@@ -424,7 +424,7 @@ def fuzzy_title(releases, titles, english_title, lang_names):
             rel_title_ss = result.get('ptn', PTN.parse(result['title']))['title']
 
             if titles:
-                logging.debug('Comparing release substring {} with titles {}.'.format(rel_title_ss, titles))
+                logging.debug(f'Comparing release substring {rel_title_ss} with titles {titles}.')
                 matches = [_fuzzy_title(rel_title_ss, title) for title in titles]
                 if any(match > 70 for match in matches):
                     result['score'] += int(max(matches) / 5)
@@ -433,7 +433,7 @@ def fuzzy_title(releases, titles, english_title, lang_names):
                 matches = [0]
 
             if english_title and any(re.search(r'\b' + lang + r'\b', result['title'].lower()) for lang in lang_names):
-                logging.debug('Comparing release substring {} with english title {}.'.format(rel_title_ss, english_title))
+                logging.debug(f'Comparing release substring {rel_title_ss} with english title {english_title}.')
                 match = _fuzzy_title(rel_title_ss, english_title)
                 if match > 70:
                     result['score'] += int(match / 5)
@@ -442,10 +442,10 @@ def fuzzy_title(releases, titles, english_title, lang_names):
                     matches.append(match)
 
             logging.debug('{} best title match was {}%, removing search result.'.format(result['title'], max(matches)))
-            result['reject_reason'] = 'mismatch title (best match was {}%)'.format(max(matches))
+            result['reject_reason'] = f'mismatch title (best match was {max(matches)}%)'
             reject += 1
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
     return releases
 
 def _fuzzy_title(a, b):
@@ -531,7 +531,7 @@ def score_sources(releases, sources, check_size=True):
 
                 if result['type'] != 'import' and not (min_size < size < max_size):
                     logging.debug('Removing {}, size {} not in range {}-{}.'.format(result['title'], size, min_size, max_size))
-                    result['reject_reason'] = 'size {} not in range {}-{}'.format(size, min_size, max_size)
+                    result['reject_reason'] = f'size {size} not in range {min_size}-{max_size}'
                     reject += 1
                     break
 
@@ -540,10 +540,10 @@ def score_sources(releases, sources, check_size=True):
                 break
 
         if not accepted and not result['reject_reason']:
-            result['reject_reason'] = 'source not accepted ({})'.format(result_res)
+            result['reject_reason'] = f'source not accepted ({result_res})'
             reject += 1
 
-    logging.info('Keeping {} releases.'.format(len(releases) - reject))
+    logging.info(f'Keeping {len(releases) - reject} releases.')
     return releases
 
 

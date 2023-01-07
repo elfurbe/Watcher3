@@ -18,10 +18,10 @@ def base_url():
 def search(imdbid, term, ignore_if_imdbid_cap = False):
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
-    logging.info('Performing backlog search on TorrentDownloads for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on TorrentDownloads for {imdbid}.')
 
     host = base_url()
-    url = '{}/rss.xml?type=search&search={}'.format(host, term)
+    url = f'{host}/rss.xml?type=search&search={term}'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -46,7 +46,7 @@ def get_rss():
     logging.info('Fetching latest RSS from TorrentDownloads.')
 
     host = base_url()
-    url = '{}/rss2/last/4'.format(host)
+    url = f'{host}/rss2/last/4'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -106,5 +106,5 @@ def _parse(xml, imdbid):
             logging.error('Error parsing TorrentDownloads XML.', exc_info=True)
             continue
 
-    logging.info('Found {} results from TorrentDownloads.'.format(len(results)))
+    logging.info(f'Found {len(results)} results from TorrentDownloads.')
     return results

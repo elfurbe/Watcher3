@@ -160,12 +160,12 @@ class Postprocessing:
         # check for required keys
         for key in ('apikey', 'mode', 'guid', 'path'):
             if key not in data:
-                logging.warning('Missing key {}'.format(key))
-                return {'response': False, 'error': 'missing key: {}'.format(key)}
+                logging.warning(f'Missing key {key}')
+                return {'response': False, 'error': f'missing key: {key}'}
 
         # check if api key is correct
         if data['apikey'] != core.CONFIG['Server']['apikey']:
-            logging.warning('Incorrect API key.'.format(key))
+            logging.warning(f'Incorrect API key.')
             return {'response': False, 'error': 'incorrect api key'}
 
         # check if mode is valid
@@ -246,7 +246,7 @@ class Postprocessing:
 
         logging.info('Finding movie file.')
         if os.path.isfile(path):
-            logging.info('Post-processing file {}.'.format(path))
+            logging.info(f'Post-processing file {path}.')
             return path
         else:
             # Find the biggest file in the dir. Assume that this is the movie.
@@ -256,7 +256,7 @@ class Postprocessing:
                 for root, dirs, filenames in os.walk(path):
                     for file in filenames:
                         f = os.path.join(root, file)
-                        logging.debug('Found file {} in postprocessing dir.'.format(f))
+                        logging.debug(f'Found file {f} in postprocessing dir.')
                         size = os.path.getsize(f)
                         if size > s:
                             biggestfile = f
@@ -268,7 +268,7 @@ class Postprocessing:
             if biggestfile:
                 minsize = core.CONFIG['Postprocessing']['Scanner']['minsize'] * 1048576
                 if check_size and os.path.getsize(os.path.join(path, biggestfile)) < minsize:
-                    logging.info('Largest file in directory {} is {}, but is smaller than the minimum size of {} bytes'.format(path, biggestfile, minsize))
+                    logging.info(f'Largest file in directory {path} is {biggestfile}, but is smaller than the minimum size of {minsize} bytes')
                     return None
                 logging.info('Largest file in directory {} is {}, processing this file.'.format(path, biggestfile.replace(path, '')))
             else:
@@ -316,15 +316,15 @@ class Postprocessing:
         if not result:  # not found from guid or downloadid
             fname = os.path.basename(data.get('path'))
             if fname:
-                logging.info('Searching local database for release name {}'.format(fname))
+                logging.info(f'Searching local database for release name {fname}')
                 result = core.sql.get_single_search_result('title', fname)
                 if result:
-                    logging.info('Found match for {} in releases.'.format(fname))
+                    logging.info(f'Found match for {fname} in releases.')
                 else:
                     logging.info('Unable to find local release info by release name, trying fuzzy search.')
                     result = core.sql.get_single_search_result('title', re.sub(r'[\[\]\(\)\-.:]', '_', fname), like=True)
                     if result:
-                        logging.info('Found match for {} in releases.'.format(fname))
+                        logging.info(f'Found match for {fname} in releases.')
                     else:
                         logging.info('Unable to find local release info by release name.')
 
@@ -548,7 +548,7 @@ class Postprocessing:
 
         dir, file_name = os.path.split(data['original_file'])
         ext = os.path.splitext(file_name)[1]
-        regexp = re.compile(r'(?<=\bcd)[1-9]\b|(?<=\bcd )[1-9]\b|(?<=\.)[1-9](?={}$)'.format(re.escape(ext)), re.IGNORECASE)
+        regexp = re.compile(fr'(?<=\bcd)[1-9]\b|(?<=\bcd )[1-9]\b|(?<=\.)[1-9](?={re.escape(ext)}$)', re.IGNORECASE)
         data['suffix'] = re.search(regexp, file_name)
         if data['suffix']:
             data['suffix'] = '.{}'.format(data['suffix'][0])
@@ -559,8 +559,8 @@ class Postprocessing:
                 path = os.path.join(dir, file)
                 suffix = re.findall(file_re, file)[0] if file != file_name and os.path.isfile(path) else None
                 if suffix:
-                    suffix = '.{}'.format(suffix[0])
-                    logging.info('Found {}, with suffix {}'.format(path, suffix))
+                    suffix = f'.{suffix[0]}'
+                    logging.info(f'Found {path}, with suffix {suffix}')
                     data['additional_files'].append([path, suffix])
 
         # mover. sets ['finished_file']
@@ -654,7 +654,7 @@ class Postprocessing:
         else:
             match = max(matches, key=len)
             new_path = path.replace(match, maps[match])
-            logging.info('Changing remote path from {} to {}'.format(path, new_path))
+            logging.info(f'Changing remote path from {path} to {new_path}')
             return new_path
 
     def compile_path(self, string, data, is_file=False):
@@ -707,7 +707,7 @@ class Postprocessing:
         if not is_file:
             new_string = self.map_remote(new_string).strip()
 
-        logging.debug('Created path "{}" from "{}"'.format(new_string, string))
+        logging.debug(f'Created path "{new_string}" from "{string}"')
 
         return self.sanitize(new_string, is_file=is_file)
 
@@ -727,7 +727,7 @@ class Postprocessing:
 
         # check to see if we have a valid renamerstring
         if re.match(r'{(.*?)}', renamer_string) is None:
-            logging.info('Invalid renamer string {}'.format(renamer_string))
+            logging.info(f'Invalid renamer string {renamer_string}')
             return ''
 
         # existing absolute path
@@ -758,7 +758,7 @@ class Postprocessing:
                 renames.append([add_file, data['additional_files'][idx]])
 
         for original_file, new_file in renames:
-            logging.info('Renaming {} to {}'.format(os.path.basename(original_file), os.path.basename(new_file)))
+            logging.info(f'Renaming {os.path.basename(original_file)} to {os.path.basename(new_file)}')
             try:
                 os.rename(original_file, new_file)
             except (SystemExit, KeyboardInterrupt):
@@ -784,13 +784,13 @@ class Postprocessing:
 
         file_dir, file_name = os.path.split(abs_filepath)
         if not os.path.isdir(recycle_bin):
-            logging.info('Creating recycle bin directory {}'.format(recycle_bin))
+            logging.info(f'Creating recycle bin directory {recycle_bin}')
             try:
                 os.makedirs(recycle_bin)
             except Exception as e:
-                logging.error('Recycling failed: Could not create Recycle Bin directory {}.'.format(recycle_bin), exc_info=True)
+                logging.error(f'Recycling failed: Could not create Recycle Bin directory {recycle_bin}.', exc_info=True)
                 return False
-        logging.info('Recycling {} to recycle bin {}'.format(abs_filepath, recycle_bin))
+        logging.info(f'Recycling {abs_filepath} to recycle bin {recycle_bin}')
         try:
             if os.path.isfile(os.path.join(recycle_bin, file_name)):
                 os.remove(os.path.join(recycle_bin, file_name))
@@ -811,7 +811,7 @@ class Postprocessing:
         Returns bool
         '''
 
-        logging.info('## Removing additional files for {}'.format(movie_file))
+        logging.info(f'## Removing additional files for {movie_file}')
 
         path, file_name = os.path.split(movie_file)
 
@@ -824,11 +824,11 @@ class Postprocessing:
             if re.search(r'\.[a-z]{2}$', name, re.I):
                 no_lang_name = os.path.splitext(name)[0]
             if name == fname or no_lang_name == fname:
-                logging.info('Removing additional file {}'.format(i))
+                logging.info(f'Removing additional file {i}')
                 try:
                     os.remove(os.path.join(path, i))
                 except Exception as e:  # noqa
-                    logging.warning('Unable to remove {}'.format(i), exc_info=True)
+                    logging.warning(f'Unable to remove {i}', exc_info=True)
                     return False
         return True
 
@@ -867,13 +867,13 @@ class Postprocessing:
             if not os.path.exists(target_folder):
                 os.makedirs(target_folder)
         except Exception as e:
-            logging.error('Mover failed: Could not create directory {}.'.format(target_folder), exc_info=True)
+            logging.error(f'Mover failed: Could not create directory {target_folder}.', exc_info=True)
             return ''
 
         # If finished_file exists, recycle or remove
         if data.get('finished_file'):
             old_movie = data['finished_file']
-            logging.info('Checking if old file {} exists.'.format(old_movie))
+            logging.info(f'Checking if old file {old_movie} exists.')
             if os.path.isfile(old_movie):
 
                 if config['recyclebinenabled']:
@@ -881,7 +881,7 @@ class Postprocessing:
                     if not self.recycle(recycle_bin, old_movie):
                         return ''
                 else:
-                    logging.info('Deleting old file {}'.format(old_movie))
+                    logging.info(f'Deleting old file {old_movie}')
                     try:
                         os.remove(old_movie)
                     except Exception as e:
@@ -915,19 +915,19 @@ class Postprocessing:
                     if config['renamerenabled']:
                         fname = compiled_name
 
-                    target_file = '{}{}'.format(os.path.join(target_folder, fname), target_ext)
+                    target_file = f'{os.path.join(target_folder, fname)}{target_ext}'
 
                     if ext.replace('.', '') in keep_extensions:
                         append = 0
                         while os.path.isfile(target_file):
                             append += 1
-                            new_filename = '{}({})'.format(fname, str(append))
-                            target_file = '{}{}'.format(os.path.join(target_folder, new_filename), target_ext)
+                            new_filename = f'{fname}({str(append)})'
+                            target_file = f'{os.path.join(target_folder, new_filename)}{target_ext}'
                         try:
-                            logging.info('Moving {} to {}'.format(old_abs_path, target_file))
+                            logging.info(f'Moving {old_abs_path} to {target_file}')
                             shutil.copyfile(old_abs_path, target_file)
                         except Exception as e:  # noqa
-                            logging.error('Moving additional files failed: Could not copy {}.'.format(old_abs_path), exc_info=True)
+                            logging.error(f'Moving additional files failed: Could not copy {old_abs_path}.', exc_info=True)
         return new_file_location
 
     def moverfile(self, file_path, target_folder, recycle_bin):
@@ -936,12 +936,12 @@ class Postprocessing:
         # Check if the target file name exists in target dir, recycle or remove
         if os.path.isfile(os.path.join(target_folder, file_name)):
             existing_movie_file = os.path.join(target_folder, file_name)
-            logging.info('Existing file {} found in {}'.format(file_name, target_folder))
+            logging.info(f'Existing file {file_name} found in {target_folder}')
             if config['recyclebinenabled']:
                 if not self.recycle(recycle_bin, existing_movie_file):
                     return ''
             else:
-                logging.info('Deleting old file {}'.format(existing_movie_file))
+                logging.info(f'Deleting old file {existing_movie_file}')
                 try:
                     os.remove(existing_movie_file)
                 except Exception as e:
@@ -954,7 +954,7 @@ class Postprocessing:
         new_file_location = os.path.join(target_folder, file_name)
 
         if config['movermethod'] == 'hardlink':
-            logging.info('Creating hardlink from {} to {}.'.format(file_path, new_file_location))
+            logging.info(f'Creating hardlink from {file_path} to {new_file_location}.')
             try:
                 os.link(file_path, new_file_location)
             except Exception as e:
@@ -963,21 +963,21 @@ class Postprocessing:
         elif config['movermethod'] == 'keeplink':
             if core.PLATFORM == 'windows':
                 logging.warning('Attempting to create symbolic link on Windows. This will fail without SeCreateSymbolicLinkPrivilege.')
-            logging.info('Creating symbolic link from {} to {}'.format(file_path, new_file_location))
+            logging.info(f'Creating symbolic link from {file_path} to {new_file_location}')
             try:
                 os.symlink(file_path, new_file_location)
             except Exception as e:
                 logging.error('Mover failed: Unable to create symbolic link.', exc_info=True)
                 return ''
         elif config['movermethod'] == 'copy':
-            logging.info('Copying {} to {}.'.format(file_path, new_file_location))
+            logging.info(f'Copying {file_path} to {new_file_location}.')
             try:
                 shutil.copy(file_path, new_file_location)
             except Exception as e:
                 logging.error('Mover failed: Unable to copy movie.', exc_info=True)
                 return ''
         else:
-            logging.info('Moving {} to {}'.format(file_path, new_file_location))
+            logging.info(f'Moving {file_path} to {new_file_location}')
             try:
                 shutil.copyfile(file_path, new_file_location)
                 os.unlink(file_path)
@@ -988,7 +988,7 @@ class Postprocessing:
             if config['movermethod'] == 'symboliclink':
                 if core.PLATFORM == 'windows':
                     logging.warning('Attempting to create symbolic link on Windows. This will fail without SeCreateSymbolicLinkPrivilege.')
-                logging.info('Creating symbolic link from {} to {}'.format(new_file_location, file_path))
+                logging.info(f'Creating symbolic link from {new_file_location} to {file_path}')
                 try:
                     os.symlink(new_file_location, file_path)
                 except Exception as e:

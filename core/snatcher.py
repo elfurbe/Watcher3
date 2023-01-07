@@ -51,7 +51,7 @@ def grab_all():
         year = movie['year']
 
         if status == 'Found':
-            logging.info('{} status is Found. Running automatic snatcher.'.format(title))
+            logging.info(f'{title} status is Found. Running automatic snatcher.')
             best_release = get_best_release(movie)
             if best_release:
                 download(best_release)
@@ -64,7 +64,7 @@ def grab_all():
             finished_date_obj = datetime.datetime.strptime(finished_date, '%Y-%m-%d')
             if finished_date_obj + keepsearchingdelta >= today:
                 minscore = (movie.get('finished_score') or 0) + keepsearchingscore
-                logging.info('{} {} was marked Finished on {}. Checking for a better release (min score {}).'.format(title, year, finished_date, minscore))
+                logging.info(f'{title} {year} was marked Finished on {finished_date}. Checking for a better release (min score {minscore}).')
                 best = get_best_release(movie, minscore=minscore)
                 if best:
                     download(best)
@@ -100,7 +100,7 @@ def get_best_release(movie, minscore=0, ignore_guid=None):
 
     search_results = core.sql.get_search_results(imdbid, quality)
     if not search_results:
-        logging.warning('Unable to automatically grab {}, no results.'.format(imdbid))
+        logging.warning(f'Unable to automatically grab {imdbid}, no results.')
         return {}
 
     # Filter out any results we don't want to grab
@@ -113,7 +113,7 @@ def get_best_release(movie, minscore=0, ignore_guid=None):
         search_results = [i for i in search_results if i['type'] not in ('torrent', 'magnet')]
 
     if not search_results:
-        logging.warning('Unable to automatically grab {}, no results available for enabled download client.'.format(imdbid))
+        logging.warning(f'Unable to automatically grab {imdbid}, no results available for enabled download client.')
         return {}
 
     # Check if we are past the 'waitdays'
@@ -125,9 +125,9 @@ def get_best_release(movie, minscore=0, ignore_guid=None):
     date_found = datetime.datetime.strptime(earliest_found, '%Y-%m-%d')
     if (today - date_found).days < wait_days:
         if core.CONFIG['Search']['skipwait'] and release_weeks_old > core.CONFIG['Search']['skipwaitweeks']:
-                logging.info('{} released {} weeks ago, skipping wait and grabbing immediately.'.format(title, release_weeks_old))
+                logging.info(f'{title} released {release_weeks_old} weeks ago, skipping wait and grabbing immediately.')
         else:
-            logging.info('Earliest found result for {} is {}, waiting {} days to grab best result.'.format(imdbid, date_found, wait_days))
+            logging.info(f'Earliest found result for {imdbid} is {date_found}, waiting {wait_days} days to grab best result.')
             return {}
 
     # Since seach_results comes back in order of score we can go through in
@@ -142,12 +142,12 @@ def get_best_release(movie, minscore=0, ignore_guid=None):
             return result
         # if doing a re-search, if top ranked result is Snatched we have nothing to do.
         elif status in ('Snatched', 'Finished'):
-            logging.info('Top-scoring release for {} has already been snatched.'.format(imdbid))
+            logging.info(f'Top-scoring release for {imdbid} has already been snatched.')
             return {}
         else:
             continue
 
-    logging.warning('No Available results for {}.'.format(imdbid))
+    logging.warning(f'No Available results for {imdbid}.')
     return None
 
 
@@ -214,18 +214,18 @@ def snatch_nzb(data):
 
     for client, config in core.CONFIG['Downloader']['Usenet'].items():
         if config['enabled']:
-            logging.info('Sending nzb to {}'.format(client))
+            logging.info(f'Sending nzb to {client}')
 
             response = getattr(downloaders, client).add_nzb(data)
 
             if response['response']:
-                logging.info('Successfully sent {} to {}.'.format(title, client))
+                logging.info(f'Successfully sent {title} to {client}.')
 
                 db_update = {'downloadid': response['downloadid'], 'download_client': client}
                 core.sql.update_multiple_values('SEARCHRESULTS', db_update, 'guid', guid)
 
                 if update_status_snatched(guid, imdbid):
-                    return {'response': True, 'message': 'Sent to {}.'.format(client), 'download_client': client, 'downloadid': response['downloadid']}
+                    return {'response': True, 'message': f'Sent to {client}.', 'download_client': client, 'downloadid': response['downloadid']}
                 else:
                     return {'response': False, 'error': 'Could not mark search result as Snatched.'}
             else:
@@ -261,18 +261,18 @@ def snatch_torrent(data):
 
     for client, config in core.CONFIG['Downloader']['Torrent'].items():
         if config['enabled']:
-            logging.info('Sending {} to {}'.format(kind, client))
+            logging.info(f'Sending {kind} to {client}')
 
             response = getattr(downloaders, client).add_torrent(data)
 
             if response['response']:
-                logging.info('Successfully sent {} to {}.'.format(title, client))
+                logging.info(f'Successfully sent {title} to {client}.')
 
                 db_update = {'downloadid': response['downloadid'], 'download_client': client}
                 core.sql.update_multiple_values('SEARCHRESULTS', db_update, 'guid', guid)
 
                 if update_status_snatched(guid, imdbid):
-                    return {'response': True, 'message': 'Sent to {}.'.format(client), 'download_client': client, 'downloadid': response['downloadid']}
+                    return {'response': True, 'message': f'Sent to {client}.', 'download_client': client, 'downloadid': response['downloadid']}
                 else:
                     return {'response': False, 'error': 'Could not mark search result as Snatched.'}
             else:
@@ -290,7 +290,7 @@ def update_status_snatched(guid, imdbid):
 
     Returns bool
     '''
-    logging.info('Updating {} to Snatched.'.format(imdbid))
+    logging.info(f'Updating {imdbid} to Snatched.')
 
     if not Manage.searchresults(guid, 'Snatched'):
         logging.error('Unable to update search result status to Snatched.')

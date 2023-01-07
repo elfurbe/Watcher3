@@ -119,12 +119,12 @@ class Conversions:
         if bytes == 1:
             return '1 Byte'
         elif bytes < base:
-            return '{} Bytes'.format(bytes)
+            return f'{bytes} Bytes'
 
         for i, s in enumerate(suffix):
             unit = base ** (i + 2)
             if bytes < unit:
-                return '{} {}'.format(round(base * bytes / unit, 1), s)
+                return f'{round(base * bytes / unit, 1)} {s}'
 
     @staticmethod
     def human_datetime(dt):
@@ -152,7 +152,7 @@ class Torrent:
         Returns str of lower-case torrent hash or '' if exception
         '''
 
-        logging.debug('Finding hash for torrent {}'.format(torrent))
+        logging.debug(f'Finding hash for torrent {torrent}')
         if not file_bytes and torrent.startswith('magnet'):
             return torrent.split('&')[0].split(':')[-1].upper()
         else:
@@ -174,7 +174,7 @@ class Torrent:
         if torrent url redirects to magnet uri
         '''
 
-        logging.debug('Finding hash for torrent {}'.format(torrent))
+        logging.debug(f'Finding hash for torrent {torrent}')
         response = Url.open(torrent, stream=True, allow_redirects=False)
         url = response.headers.get('Location', '')
         match = re.search(r"[?&]xt=urn:btih:([A-Z0-9]*)", url, re.I)

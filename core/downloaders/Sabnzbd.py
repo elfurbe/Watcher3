@@ -23,7 +23,7 @@ def test_connection(data):
     port = data['port']
     api = data['api']
 
-    url = 'http://{}:{}/sabnzbd/api?apikey={}&mode=server_stats'.format(host, port, api)
+    url = f'http://{host}:{port}/sabnzbd/api?apikey={api}&mode=server_stats'
 
     try:
         response = Url.open(url).text
@@ -34,7 +34,7 @@ def test_connection(data):
         raise
     except Exception as e:
         logging.error('Sabnzbd connection test failed.', exc_info=True)
-        return '{}.'.format(e)
+        return f'{e}.'
 
 
 def add_nzb(data):
@@ -54,7 +54,7 @@ def add_nzb(data):
     port = conf['port']
     api = conf['api']
 
-    base_url = 'http://{}:{}/sabnzbd/api?apikey={}'.format(host, port, api)
+    base_url = f'http://{host}:{port}/sabnzbd/api?apikey={api}'
 
     mode = 'addurl'
     name = urllib.parse.quote(data['guid'])
@@ -69,7 +69,7 @@ def add_nzb(data):
     }
     priority = priority_keys[conf['priority']]
 
-    command_url = '&mode={}&name={}&nzbname={}&cat={}&priority={}&output=json'.format(mode, name, nzbname, cat, priority)
+    command_url = f'&mode={mode}&name={name}&nzbname={nzbname}&cat={cat}&priority={priority}&output=json'
 
     url = base_url + command_url
 
@@ -78,10 +78,10 @@ def add_nzb(data):
 
         if response['status'] is True and len(response['nzo_ids']) > 0:
             downloadid = response['nzo_ids'][0]
-            logging.info('NZB sent to SABNzbd - downloadid {}.'.format(downloadid))
+            logging.info(f'NZB sent to SABNzbd - downloadid {downloadid}.')
             return {'response': True, 'downloadid': downloadid}
         else:
-            logging.error('Unable to send NZB to Sabnzbd. {}'.format(response))
+            logging.error(f'Unable to send NZB to Sabnzbd. {response}')
             return {'response': False, 'error': 'Unable to add NZB.'}
 
     except Exception as e:
@@ -95,7 +95,7 @@ def cancel_download(downloadid):
 
     Returns bool
     '''
-    logging.info('Cancelling download # {} in SABnzbd.'.format(downloadid))
+    logging.info(f'Cancelling download # {downloadid} in SABnzbd.')
 
     conf = core.CONFIG['Downloader']['Usenet']['Sabnzbd']
 
@@ -103,7 +103,7 @@ def cancel_download(downloadid):
     port = conf['port']
     api = conf['api']
 
-    url = 'http://{}:{}/sabnzbd/api?apikey={}&mode=queue&name=delete&value={}&output=json'.format(host, port, api, downloadid)
+    url = f'http://{host}:{port}/sabnzbd/api?apikey={api}&mode=queue&name=delete&value={downloadid}&output=json'
 
     try:
         response = json.loads(Url.open(url).text)

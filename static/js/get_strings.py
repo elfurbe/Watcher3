@@ -19,11 +19,11 @@ name = args.n
 if args.o:
     output = args.o
 else:
-    output = 'js_strings_{}.js'.format(name)
+    output = f'js_strings_{name}.js'
 
 verbose = True if args.v else False
 
-print('Writing to output file: {}'.format(output))
+print(f'Writing to output file: {output}')
 
 scripts = []
 strings = {}
@@ -37,7 +37,7 @@ for root, dirs, files in os.walk('.'):
 
 for script in scripts:
     if verbose:
-        print('Parsing {}'.format(script))
+        print(f'Parsing {script}')
 
     with open(script) as f:
         t = f.read()
@@ -47,7 +47,7 @@ for script in scripts:
         for i in t:
             string = i.split('")')[0]
             if verbose:
-                print('Found string: "{}"'.format(string))
+                print(f'Found string: "{string}"')
             if string not in strings.keys():
                 strings[string] = [os.path.basename(script)]
             else:
@@ -60,7 +60,7 @@ with open(output, 'w+') as f:
         f.write(ln)
 
     for i in ('Waiting', 'Wanted', 'Found', 'Snatched', 'Finished', 'Bad', 'Available'):
-        ln = '\t\t"{}": "",\n'.format(i)
+        ln = f'\t\t"{i}": "",\n'
         f.write(ln)
 
     f.write('\t\t}')

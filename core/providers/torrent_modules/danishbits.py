@@ -19,10 +19,10 @@ def search(imdbid, term, ignore_if_imdbid_cap = False):
     username = core.CONFIG['Indexers']['PrivateTorrent']['danishbits']['username']
     passkey = core.CONFIG['Indexers']['PrivateTorrent']['danishbits']['passkey']
 
-    logging.info('Performing backlog search on DanishBits for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on DanishBits for {imdbid}.')
 
     try:
-        url = 'https://danishbits.org/couchpotato.php?user={}&passkey={}&imdbid={}'.format(username, passkey, imdbid)
+        url = f'https://danishbits.org/couchpotato.php?user={username}&passkey={passkey}&imdbid={imdbid}'
 
         if proxy_enabled and core.proxy.whitelist('https://danishbits.org') is True:
             response = Url.open(url, proxy_bypass=True, expose_user_agent=True).text
@@ -38,7 +38,7 @@ def search(imdbid, term, ignore_if_imdbid_cap = False):
             logging.info('Nothing found on DanishBits')
             errormsg = responseobject.get('error')
             if errormsg:
-                logging.info('Error message: {}'.format(errormsg))
+                logging.info(f'Error message: {errormsg}')
             return []
     except (SystemExit, KeyboardInterrupt):
         raise
@@ -54,7 +54,7 @@ def _parse(results, imdbid=None):
     Returns list of dicts
     '''
 
-    logging.info('Parsing {} DanishBits results.'.format(len(results)))
+    logging.info(f'Parsing {len(results)} DanishBits results.')
     parsed_results = []
 
     for result in results:
@@ -78,5 +78,5 @@ def _parse(results, imdbid=None):
         parsed_result['title'] = result['release_name']
         parsed_results.append(parsed_result)
 
-    logging.info('Found {} results from DanishBits'.format(len(parsed_results)))
+    logging.info(f'Found {len(parsed_results)} results from DanishBits')
     return parsed_results

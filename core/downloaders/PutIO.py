@@ -36,7 +36,7 @@ def test_connection(data):
     response = Url.open(url_base.format('account/info', core.CONFIG['Downloader']['Torrent']['PutIO']['oauthtoken']))
 
     if response.status_code != 200:
-        return '{}: {}'.format(response.status_code, response.reason)
+        return f'{response.status_code}: {response.reason}'
 
     response = json.loads(response.text)
     if response['status'] != 'OK':
@@ -76,7 +76,7 @@ def add_torrent(data):
         return {'response': False, 'error': str(e)}
 
     if response.status_code != 200:
-        return {'response': False, 'error': '{}: {}'.format(response.status_code, response.reason)}
+        return {'response': False, 'error': f'{response.status_code}: {response.reason}'}
 
     try:
         response = json.loads(response.text)
@@ -109,7 +109,7 @@ def cancel_download(downloadid):
         if json.loads(response.text).get('status') == 'OK':
             return True
         else:
-            logging.warning('Unable to cancel Put.io download: {}'.format(response))
+            logging.warning(f'Unable to cancel Put.io download: {response}')
             return False
     except Exception as e:
         logging.warning('Unable to cancel Put.io download', exc_info=True)
@@ -128,7 +128,7 @@ def download(_id):
     conf = core.CONFIG['Downloader']['Torrent']['PutIO']
 
     try:
-        response = Url.open(url_base.format('files/{}'.format(_id), conf['oauthtoken']))
+        response = Url.open(url_base.format(f'files/{_id}', conf['oauthtoken']))
     except Exception as e:
         return {'response': False, 'error': str(e)}
 
@@ -150,7 +150,7 @@ def download(_id):
             os.makedirs(download_dir)
         except Exception as e:
             logging.error('Cannot create download dir', exc_info=True)
-            return {'response': False, 'error': 'Cannot create download dir. {}'.format(str(e))}
+            return {'response': False, 'error': f'Cannot create download dir. {str(e)}'}
     else:
         logging.warning('Download dir exists, existing files may be overwritten.')
 
@@ -171,7 +171,7 @@ def delete(file_id):
 
     Returns bool
     '''
-    logging.info('Deleting file {} on Put.IO'.format(file_id))
+    logging.info(f'Deleting file {file_id} on Put.IO')
     conf = core.CONFIG['Downloader']['Torrent']['PutIO']
 
     url = url_base.format('files/delete', conf['oauthtoken'])
@@ -228,7 +228,7 @@ def _read_dir(dir_id, token):
     files = []
 
     try:
-        response = Url.open(url_base.format('files/list', token) + '&parent_id={}'.format(dir_id))
+        response = Url.open(url_base.format('files/list', token) + f'&parent_id={dir_id}')
     except Exception as e:
         logging.warning('Unable to read files on Put.io', exc_info=True)
         return []

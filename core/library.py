@@ -32,7 +32,7 @@ class ImportDirectory:
         Returns dict ajax-style response
         '''
 
-        logging.info('Scanning {} for movies.'.format(directory))
+        logging.info(f'Scanning {directory} for movies.')
 
         files = []
         try:
@@ -41,22 +41,22 @@ class ImportDirectory:
             else:
                 files = [os.path.join(directory, i) for i in os.listdir(directory) if os.path.isfile(os.path.join(directory, i))]
         except Exception as e:
-            logging.debug('scan_dir() ImportDirectory._walk exception {}'.format(str(e)))
+            logging.debug(f'scan_dir() ImportDirectory._walk exception {str(e)}')
             return {'error': str(e)}
 
         f = []
-        logging.debug('Specified minimum file size: {} Bytes.'.format(minsize * 1024**2))
+        logging.debug(f'Specified minimum file size: {minsize * 1024**2} Bytes.')
         ms = minsize * 1024**2
         for i in files:
             # Ignore file not found errors (eg file was deleted between directory walk and size check)
             try:
                 s = os.path.getsize(i)
                 if not s >= (ms):
-                    logging.debug('{} size is {} skipping.'.format(i, s))
+                    logging.debug(f'{i} size is {s} skipping.')
                     continue
                 f.append(i)
             except Exception as e:
-                logging.debug('scan_dir() os.path.getsize exception {}'.format(str(e)))
+                logging.debug(f'scan_dir() os.path.getsize exception {str(e)}')
                 continue
 
         return {'files': f}
@@ -74,10 +74,10 @@ class ImportDirectory:
         for i in dir_contents:
             full_path = os.path.join(directory, i)
             if os.path.isdir(full_path):
-                logging.debug('Scanning {}{}{}'.format(directory, os.sep, i))
+                logging.debug(f'Scanning {directory}{os.sep}{i}')
                 files = files + ImportDirectory._walk(full_path)
             else:
-                logging.debug('Found file {}'.format(full_path))
+                logging.debug(f'Found file {full_path}')
                 files.append(full_path)
         return files
 
@@ -121,7 +121,7 @@ class ImportKodiLibrary:
                     }
 
         logging.info('Retreiving movies from Kodi.')
-        url = '{}/jsonrpc?request={}'.format(url, json.dumps(krequest))
+        url = f'{url}/jsonrpc?request={json.dumps(krequest)}'
 
         try:
             response = Url.open(url)
@@ -130,7 +130,7 @@ class ImportKodiLibrary:
             return {'response': False, 'error': str(e.args[0].reason).split(']')[-1]}
 
         if response.status_code != 200:
-            return {'response': False, 'error': '{} {}'.format(response.status_code, response.reason.title())}
+            return {'response': False, 'error': f'{response.status_code} {response.reason.title()}'}
 
         library = [i['imdbid'] for i in core.sql.get_user_movies()]
         movies = []
@@ -292,7 +292,7 @@ class ImportCPLibrary:
         except Exception as e:
             return {'response': False, 'error': str(e)}
         if r.status_code != 200:
-            return {'response': False, 'error': '{} {}'.format(r.status_code, r.reason.title())}
+            return {'response': False, 'error': f'{r.status_code} {r.reason.title()}'}
         try:
             cp = json.loads(r.text)
         except Exception as e:
@@ -400,7 +400,7 @@ class Metadata:
         Returns dict
         '''
 
-        logging.info('Gathering metadata for {}.'.format(filepath))
+        logging.info(f'Gathering metadata for {filepath}.')
 
         data = {
             'title': None,
@@ -471,7 +471,7 @@ class Metadata:
         Returns dict of metadata
         '''
 
-        logging.info('Parsing codec data from file {}.'.format(filepath))
+        logging.info(f'Parsing codec data from file {filepath}.')
         metadata = {}
         try:
             with createParser(filepath) as parser:
@@ -525,7 +525,7 @@ class Metadata:
 
         dirname = os.path.split(filepath)[0].split(os.sep)[-1]
 
-        logging.info('Parsing directory name for movie information: {}.'.format(dirname))
+        logging.info(f'Parsing directory name for movie information: {dirname}.')
 
         meta_data = PTN.parse(dirname)
         for i in ('excess', 'episode', 'episodeName', 'season', 'garbage', 'website'):
@@ -533,12 +533,12 @@ class Metadata:
 
         if len(meta_data) > 3:
             meta_data['release_name'] = dirname
-            logging.info('Found {} in filename.'.format(meta_data))
+            logging.info(f'Found {meta_data} in filename.')
         else:
             logging.debug('Parsing directory name does not look accurate. Parsing file name.')
             filename = os.path.basename(filepath)
             meta_data = PTN.parse(filename)
-            logging.info('Found {} in file name.'.format(meta_data))
+            logging.info(f'Found {meta_data} in file name.')
             if len(meta_data) < 2:
                 logging.warning('Little information found in file name. Movie may be incomplete.')
             meta_data['release_title'] = filename
@@ -684,11 +684,11 @@ class Metadata:
         if tmdbid is None:
             tmdbid = core.sql.get_movie_details('imdbid', imdbid).get('tmdbid')
             if not tmdbid:
-                logging.debug('TMDB id not found in local database, searching TMDB for {}'.format(imdbid))
+                logging.debug(f'TMDB id not found in local database, searching TMDB for {imdbid}')
                 tmdb_data = TheMovieDatabase._search_imdbid(imdbid)
                 tmdbid = tmdb_data[0].get('id') if tmdb_data else None
             if not tmdbid:
-                logging.debug('Unable to find {} on TMDB.'.format(imdbid))
+                logging.debug(f'Unable to find {imdbid} on TMDB.')
                 return None
 
         results = TheMovieDatabase._search_tmdbid(tmdbid, language)
@@ -716,7 +716,7 @@ class Metadata:
         Returns dict ajax-style response
         '''
 
-        logging.info('Updating metadata for {}'.format(imdbid))
+        logging.info(f'Updating metadata for {imdbid}')
         movie = core.sql.get_movie_details('imdbid', imdbid)
 
         if force_poster:
@@ -733,12 +733,12 @@ class Metadata:
             tmdbid = movie.get('tmdbid')
 
             if not tmdbid:
-                logging.debug('TMDB id not found in local database, searching TMDB for {}'.format(imdbid))
+                logging.debug(f'TMDB id not found in local database, searching TMDB for {imdbid}')
                 tmdb_data = TheMovieDatabase._search_imdbid(imdbid)
                 tmdbid = tmdb_data[0].get('id') if tmdb_data else None
             if not tmdbid:
-                logging.debug('Unable to find {} on TMDB.'.format(imdbid))
-                return {'response': False, 'error': 'Unable to find {} on TMDB.'.format(imdbid)}
+                logging.debug(f'Unable to find {imdbid} on TMDB.')
+                return {'response': False, 'error': f'Unable to find {imdbid} on TMDB.'}
 
         new_data = TheMovieDatabase._search_tmdbid(tmdbid, movie.get('download_language'))
 
@@ -750,7 +750,7 @@ class Metadata:
 
         new_data.pop('status')
 
-        target_poster = os.path.join(Poster.folder, '{}.jpg'.format(imdbid))
+        target_poster = os.path.join(Poster.folder, f'{imdbid}.jpg')
 
         if new_data.get('poster_path'):
             poster_path = 'http://image.tmdb.org/t/p/w300{}'.format(new_data['poster_path'])
@@ -908,7 +908,7 @@ class Manage:
         tmdbid = movie['id']
 
         if not full_metadata:
-            logging.debug('More information needed, searching TheMovieDB for {}'.format(tmdbid))
+            logging.debug(f'More information needed, searching TheMovieDB for {tmdbid}')
             tmdb_data = TheMovieDatabase._search_tmdbid(tmdbid)
             if not tmdb_data:
                 response['error'] = _('Unable to find {} on TMDB.').format(tmdbid)
@@ -942,7 +942,7 @@ class Manage:
             response['error'] = _('Could not write to database.')
         else:
             if poster_path:
-                poster_url = 'http://image.tmdb.org/t/p/w300/{}'.format(poster_path)
+                poster_url = f'http://image.tmdb.org/t/p/w300/{poster_path}'
                 threading.Thread(target=Poster.save, args=(movie['imdbid'], poster_url)).start()
 
             response['response'] = True
@@ -961,7 +961,7 @@ class Manage:
         Returns dict ajax-style response
         '''
 
-        logging.info('Removing {} for library.'.format(imdbid))
+        logging.info(f'Removing {imdbid} for library.')
 
         m = core.sql.get_movie_details('imdbid', imdbid)
 
@@ -1082,7 +1082,7 @@ class Manage:
         Returns str new movie status
         '''
 
-        logging.info('Determining appropriate status for movie {}.'.format(imdbid))
+        logging.info(f'Determining appropriate status for movie {imdbid}.')
 
         movie = core.sql.get_movie_details('imdbid', imdbid)
         if movie:
@@ -1120,11 +1120,11 @@ class Manage:
         else:
             new_status = 'Wanted' if Manage.verify(movie) else 'Waiting'
 
-        logging.info('Setting MOVIES {} status to {}.'.format(imdbid, new_status))
+        logging.info(f'Setting MOVIES {imdbid} status to {new_status}.')
         if core.sql.update('MOVIES', 'status', new_status, 'imdbid', imdbid):
             return new_status
         else:
-            logging.error('Could not set {} to {}'.format(imdbid, new_status))
+            logging.error(f'Could not set {imdbid} to {new_status}')
             return ''
 
     @staticmethod
@@ -1257,7 +1257,7 @@ class Manage:
         Returns dict ajax-style response
         '''
 
-        logging.info('Setting quality, category, title, language and filters for {}.'.format(imdbid))
+        logging.info(f'Setting quality, category, title, language and filters for {imdbid}.')
         new_data = {'quality': quality, 'category': category, 'filters': filters, 'title': title, 'download_language': language}
         new_data = {k: v for k, v in new_data.items() if v is not None}
         movie = core.sql.get_movie_details('imdbid', imdbid)

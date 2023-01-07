@@ -102,7 +102,7 @@ class AuthController:
         Does not return
         '''
 
-        logging.info('Successful login from {}'.format(origin_ip))
+        logging.info(f'Successful login from {origin_ip}')
 
     def on_logout(self, username, origin_ip):
         ''' Called on logout
@@ -113,7 +113,7 @@ class AuthController:
         Does not return
         '''
 
-        logging.info('Logging out IP {}'.format(origin_ip))
+        logging.info(f'Logging out IP {origin_ip}')
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -137,7 +137,7 @@ class AuthController:
             origin_ip = cherrypy.request.headers['Remote-Addr']
 
         if check_credentials(username, password) is False:
-            logging.warning('Failed login attempt {}:{} from {}'.format(username, password, origin_ip))
+            logging.warning(f'Failed login attempt {username}:{password} from {origin_ip}')
             return False
         else:
             cherrypy.session.acquire_lock()

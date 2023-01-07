@@ -33,7 +33,7 @@ def test_connection(data):
         raise
     except Exception as e:
         logging.error('Unable to connect to TransmissionRPC.', exc_info=True)
-        return '{}.'.format(e)
+        return f'{e}.'
 
 
 def add_torrent(data):
@@ -82,12 +82,12 @@ def add_torrent(data):
         download = client.add_torrent(url, paused=paused, bandwidthPriority=bandwidthPriority, download_dir=download_dir, timeout=30)
         downloadid = download.hashString
         set_torrent_limits(download.id)
-        logging.info('Torrent sent to TransmissionRPC - downloadid {}'.format(downloadid))
+        logging.info(f'Torrent sent to TransmissionRPC - downloadid {downloadid}')
         return {'response': True, 'downloadid': downloadid}
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception as e:
-        logging.error('Unable to send torrent {} to TransmissionRPC.'.format(url), exc_info=True)
+        logging.error(f'Unable to send torrent {url} to TransmissionRPC.', exc_info=True)
         return {'response': False, 'error': str(e)}
 
 def set_torrent_limits(downloadid):
@@ -121,7 +121,7 @@ def set_torrent_limits(downloadid):
         args['seedRatioMode'] = 1
         args['seedRatioLimit'] = ratio_limit_desc = ratio_limit
 
-    logging.info('Setting idle limit to {} and ratio limit to {} for torrent #{}'.format(idle_limit_desc, ratio_limit_desc, downloadid))
+    logging.info(f'Setting idle limit to {idle_limit_desc} and ratio limit to {ratio_limit_desc} for torrent #{downloadid}')
 
     if args:
         host = conf['host']
@@ -136,7 +136,7 @@ def set_torrent_limits(downloadid):
         except (SystemExit, KeyboardInterrupt):
             raise
         except Exception as e:
-            logging.error('Unable to change torrent #{} in TransmissionRPC.'.format(downloadid), exc_info=True)
+            logging.error(f'Unable to change torrent #{downloadid} in TransmissionRPC.', exc_info=True)
             return False
     else:
         return True
@@ -185,7 +185,7 @@ def cancel_download(downloadid):
 
     Returns bool
     '''
-    logging.info('Cancelling download # {} in Transmission.'.format(downloadid))
+    logging.info(f'Cancelling download # {downloadid} in Transmission.')
 
     conf = core.CONFIG['Downloader']['Torrent']['Transmission']
 

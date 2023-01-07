@@ -24,7 +24,7 @@ def _send(method, post_data=None):
     if not cookie:
         r = _login('{}:{}/'.format(conf['host'], conf['port']), conf['user'], conf['pass'])
         if r is not True:
-            logging.error('Unable to connect to QBittorrent: {}'.format(r))
+            logging.error(f'Unable to connect to QBittorrent: {r}')
             return False
 
     url = '{}:{}/api/v2/{}'.format(conf['host'], conf['port'], method)
@@ -48,7 +48,7 @@ def _send(method, post_data=None):
                 logging.error('Unable to contact QBittorrent API.', exc_info=True)
                 raise APIConnectionError(response.status_code, response.reason)
     elif response.status_code != 200:
-        logging.error('QBittorrent API call failed: {}'.format(response.reason))
+        logging.error(f'QBittorrent API call failed: {response.reason}')
         raise APIConnectionError(response.status_code, response.reason)
 
     return response.text
@@ -85,7 +85,7 @@ def add_torrent(data):
 
     host = conf['host']
     port = conf['port']
-    base_url = '{}:{}/'.format(host, port)
+    base_url = f'{host}:{port}/'
 
     download_dir = _get_download_dir(base_url)
 
@@ -129,7 +129,7 @@ def _login(url, username, password):
 
     post_data = {'username': username, 'password': password}
 
-    url = '{}api/v2/auth/login'.format(url)
+    url = f'{url}api/v2/auth/login'
     try:
         response = Url.open(url, post_data=post_data)
         cookie = response.headers.get('Set-Cookie')
@@ -147,7 +147,7 @@ def _login(url, username, password):
         raise
     except Exception as e:
         logging.error('qbittorrent test_connection', exc_info=True)
-        return '{}.'.format(str(e))
+        return f'{str(e)}.'
 
 
 def cancel_download(downloadid):
@@ -156,7 +156,7 @@ def cancel_download(downloadid):
 
     Returns bool
     '''
-    logging.info('Cancelling download # {} in QBittorrent.'.format(downloadid))
+    logging.info(f'Cancelling download # {downloadid} in QBittorrent.')
 
     try:
         _send('torrents/delete', post_data={'hashes': downloadid.lower(), 'deleteFiles': False})
@@ -171,4 +171,4 @@ def cancel_download(downloadid):
 class APIConnectionError(Exception):
     ''' Raised when a timed task is in conflict with itself '''
     def __init__(self, status_code, reason):
-        self.msg = 'QBittorrent API request error {}: {}'.format(status_code, reason)
+        self.msg = f'QBittorrent API request error {status_code}: {reason}'

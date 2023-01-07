@@ -31,37 +31,37 @@ def create():
     password = core.CONFIG['Server']['Proxy']['pass'] or None
 
     if core.CONFIG['Server']['Proxy']['type'] == 'socks5':
-        logging.info('Creating socket for SOCKS5 proxy at {}:{}'.format(host, port))
+        logging.info(f'Creating socket for SOCKS5 proxy at {host}:{port}')
         if user and password:
-            addr = 'socks5://{}:{}@{}:{}'.format(user, password, host, port)
+            addr = f'socks5://{user}:{password}@{host}:{port}'
         else:
-            addr = 'socks5://{}:{}'.format(host, port)
+            addr = f'socks5://{host}:{port}'
 
         proxies = {'http': addr, 'https': addr}
         Url.proxies = proxies
 
         on = True
     elif core.CONFIG['Server']['Proxy']['type'] == 'socks4':
-        logging.info('Creating socket for SOCKS4 proxy at {}:{}'.format(host, port))
+        logging.info(f'Creating socket for SOCKS4 proxy at {host}:{port}')
         if user and password:
-            addr = 'socks4://{}:{}@{}:{}'.format(user, password, host, port)
+            addr = f'socks4://{user}:{password}@{host}:{port}'
         else:
-            addr = 'socks4://{}:{}'.format(host, port)
+            addr = f'socks4://{host}:{port}'
 
         proxies = {'http': addr, 'https': addr}
         Url.proxies = proxies
 
         on = True
     elif core.CONFIG['Server']['Proxy']['type'] == 'http(s)':
-        logging.info('Creating HTTP(S) proxy at {}:{}'.format(host, port))
+        logging.info(f'Creating HTTP(S) proxy at {host}:{port}')
         protocol = host.split(':')[0]
 
         proxies = {}
 
         if user and password:
-            url = '{}:{}@{}:{}'.format(user, password, host, port)
+            url = f'{user}:{password}@{host}:{port}'
         else:
-            url = '{}:{}'.format(host, port)
+            url = f'{host}:{port}'
 
         proxies['http'] = url
 
@@ -107,7 +107,7 @@ def whitelist(url):
 
     for i in whitelist:
         if url.startswith(i.strip()):
-            logging.info('{} in proxy whitelist, will bypass proxy connection.'.format(url))
+            logging.info(f'{url} in proxy whitelist, will bypass proxy connection.')
             return True
         else:
             continue

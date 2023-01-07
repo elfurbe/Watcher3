@@ -19,10 +19,10 @@ def search(imdbid, term, ignore_if_imdbid_cap = False):
         return []
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
-    logging.info('Performing backlog search on YTS for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on YTS for {imdbid}.')
 
     host = base_url()
-    url = '{}/api/v2/list_movies.json?limit=1&query_term={}'.format(host, imdbid)
+    url = f'{host}/api/v2/list_movies.json?limit=1&query_term={imdbid}'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -51,7 +51,7 @@ def get_rss():
     logging.info('Fetching latest RSS from YTS.')
 
     host = base_url()
-    url = '{}/rss/0/all/all/0'.format(host)
+    url = f'{host}/rss/0/all/all/0'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -102,7 +102,7 @@ def _parse(movie, imdbid, title):
             logging.error('Error parsing YTS JSON.', exc_info=True)
             continue
 
-    logging.info('Found {} results from YTS'.format(len(results)))
+    logging.info(f'Found {len(results)} results from YTS')
     return results
 
 
@@ -131,7 +131,7 @@ def _parse_rss(xml):
             result['size'] = int(float(human_size.split(' ')[0]) * m)
             result['status'] = 'Available'
             result['pubdate'] = None
-            result['title'] = '{}.Bluray.{}.YTS'.format(title, quality)
+            result['title'] = f'{title}.Bluray.{quality}.YTS'
             result['imdbid'] = None
             result['indexer'] = 'YTS'
             result['info_link'] = i.find('link').text
@@ -149,5 +149,5 @@ def _parse_rss(xml):
             logging.error('Error parsing YTS XML.', exc_info=True)
             continue
 
-    logging.info('Found {} results from YTS'.format(len(results)))
+    logging.info(f'Found {len(results)} results from YTS')
     return results

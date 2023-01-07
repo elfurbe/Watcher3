@@ -33,14 +33,14 @@ class NewzNabProvider:
         Returns list of dicts of search results
         '''
 
-        url = '{}api?apikey={}&cat=2000&extended=1'.format(url_base, apikey)
+        url = f'{url_base}api?apikey={apikey}&cat=2000&extended=1'
 
         if type_ == 'movie':
-            url += '&t=movie&imdbid={}'.format(imdbid[2:])
+            url += f'&t=movie&imdbid={imdbid[2:]}'
         elif type_ == 'search':
-            url += '&t=search&q={}'.format(q)
+            url += f'&t=search&q={q}'
         else:
-            logging.error('Unknown search method {}'.format(type_))
+            logging.error(f'Unknown search method {type_}')
             return []
 
         logging.info('SEARCHING: {}'.format(url.replace(apikey, 'APIKEY')))
@@ -54,7 +54,7 @@ class NewzNabProvider:
                 response = Url.open(url).text
 
             results = self.parse_newznab_xml(response, imdbid=imdbid)
-            logging.info('Found {} results from {}.'.format(len(results), url_base))
+            logging.info(f'Found {len(results)} results from {url_base}.')
             return results
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -81,14 +81,14 @@ class NewzNabProvider:
             if indexer[2] is False:
                 continue
             url_base = indexer[0]
-            logging.info('Fetching latest RSS from {}.'.format(url_base))
+            logging.info(f'Fetching latest RSS from {url_base}.')
             if url_base[-1] != '/':
                 url_base = url_base + '/'
             apikey = indexer[1]
 
-            url = '{}api?t=movie&cat=2000&extended=1&offset=0&apikey={}'.format(url_base, apikey)
+            url = f'{url_base}api?t=movie&cat=2000&extended=1&offset=0&apikey={apikey}'
 
-            logging.info('RSS_SYNC: {}api?t=movie&cat=2000&extended=1&offset=0&apikey=APIKEY'.format(url_base))
+            logging.info(f'RSS_SYNC: {url_base}api?t=movie&cat=2000&extended=1&offset=0&apikey=APIKEY')
 
             try:
                 if proxy_enabled and proxy.whitelist(url) is True:
@@ -97,7 +97,7 @@ class NewzNabProvider:
                     response = Url.open(url).text
 
                 results = self.parse_newznab_xml(response)
-                logging.info('Found {} results from {}.'.format(len(results), url_base))
+                logging.info(f'Found {len(results)} results from {url_base}.')
                 return results
             except (SystemExit, KeyboardInterrupt):
                 raise
@@ -153,7 +153,7 @@ class NewzNabProvider:
                             params.append('xt=' + qsprs.pop('xt')[0])
                         for k in qsprs:
                             for v in qsprs[k]:
-                                params.append('{}={}'.format(k, urllib.parse.quote(v)))
+                                params.append(f'{k}={urllib.parse.quote(v)}')
                         guid = rt + '?' + '&'.join(params)
                 else:
                     guid = item.get('link')
@@ -211,14 +211,14 @@ class NewzNabProvider:
 
         response = {}
 
-        logging.info('Testing connection to {}.'.format(indexer))
+        logging.info(f'Testing connection to {indexer}.')
 
-        url = '{}/api?apikey={}&t=search&id=tt0063350'.format(indexer, apikey)
+        url = f'{indexer}/api?apikey={apikey}&t=search&id=tt0063350'
 
         try:
             r = Url.open(url)
             if r.status_code != 200:
-                return {'response': False, 'error': '{} {}'.format(r.status_code, r.reason.title())}
+                return {'response': False, 'error': f'{r.status_code} {r.reason.title()}'}
             else:
                 response = r.text
         except (SystemExit, KeyboardInterrupt):

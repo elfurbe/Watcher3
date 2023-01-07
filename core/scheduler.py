@@ -75,13 +75,13 @@ class PostProcessingScan:
         conf = core.CONFIG['Postprocessing']['Scanner']
         d = conf['directory']
 
-        logging.info('Scanning {} for movies to process.'.format(d))
+        logging.info(f'Scanning {d} for movies to process.')
 
         minsize = core.CONFIG['Postprocessing']['Scanner']['minsize'] * 1048576
 
         # paths processed with api requests since last task run
         postprocessed_paths = core.sql.get_postprocessed_paths()
-        logging.debug('Paths already post processed: {}'.format(postprocessed_paths))
+        logging.debug(f'Paths already post processed: {postprocessed_paths}')
 
         files = []
         if conf['newfilesonly']:
@@ -92,7 +92,7 @@ class PostProcessingScan:
             le = datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
             threshold = time.mktime(le.timetuple())
 
-            logging.info('Scanning {} for new files only (last scan: {}).'.format(d, le))
+            logging.info(f'Scanning {d} for new files only (last scan: {le}).')
 
             for i in os.listdir(d):
                 f = os.path.join(d, i)
@@ -119,14 +119,14 @@ class PostProcessingScan:
                 i = i[:-1]
             fname = os.path.basename(i)
 
-            logging.info('Processing {}.'.format(i))
+            logging.info(f'Processing {i}.')
 
             r = core.sql.get_single_search_result('title', fname)
             if r:
                 logging.info('Found match for {} in releases: {}.'.format(fname, r['title']))
             else:
                 r['guid'] = 'postprocessing{}'.format(hashlib.md5(fname.encode('ascii', errors='ignore')).hexdigest()).lower()
-                logging.info('Unable to find match in database for {}, release cannot be marked as Finished.'.format(fname))
+                logging.info(f'Unable to find match in database for {fname}, release cannot be marked as Finished.')
 
             d = {'apikey': core.CONFIG['Server']['apikey'],
                  'mode': 'complete',

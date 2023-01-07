@@ -73,7 +73,7 @@ def remove(index):
     Does not return
     '''
 
-    logging.info('Remove notification #{}.'.format(index))
+    logging.info(f'Remove notification #{index}.')
     try:
         core.NOTIFICATIONS[int(index)] = None
     except Exception as e:

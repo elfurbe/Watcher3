@@ -47,7 +47,7 @@ class UpdateBase:
 
             notif = {'type': 'update',
                      'title': title,
-                     'message': 'Click <a onclick="_start_update(event)"><u>here</u></a> to update now.<br/> Click <a href="{}" target="_blank" rel="noopener"><u>here</u></a> to view changes.'.format(compare)
+                     'message': f'Click <a onclick="_start_update(event)"><u>here</u></a> to update now.<br/> Click <a href="{compare}" target="_blank" rel="noopener"><u>here</u></a> to view changes.'
                      }
 
             notification.add(notif, type_='success')
@@ -92,7 +92,7 @@ class Git:
         for i in args.split(' '):
             command.append(i)
 
-        logging.debug('Executing Git command: {}'.format(command))
+        logging.debug(f'Executing Git command: {command}')
 
         try:
             if core.PLATFORM == 'windows':
@@ -194,7 +194,7 @@ class GitUpdater(UpdateBase):
         '''
         git_available = self.git.available()
         if git_available[2] == 1:
-            logging.error('Could not execute git: {}'.format(git_available[0]))
+            logging.error(f'Could not execute git: {git_available[0]}')
             return False
         else:
             return True
@@ -210,7 +210,7 @@ class GitUpdater(UpdateBase):
 
         fetch = self.git.fetch()
         if fetch[2] == 1:
-            logging.error('Error fetching data from git: {}'.format(fetch[1]))
+            logging.error(f'Error fetching data from git: {fetch[1]}')
             return False
 
         # reset update status so it doesn't ask us to update again
@@ -219,7 +219,7 @@ class GitUpdater(UpdateBase):
         pull = self.git.pull()
 
         if pull[2] == 1:
-            logging.error('Update failed: {}'.format(pull[0]))
+            logging.error(f'Update failed: {pull[0]}')
             return False
         else:
             logging.info('Update successful.')
@@ -248,7 +248,7 @@ class GitUpdater(UpdateBase):
         # Make sure our git info is up to date
         fetch = self.git.fetch()
         if fetch[2] == 1:
-            logging.error('Error fetching data from git: {}'.format(fetch[1]))
+            logging.error(f'Error fetching data from git: {fetch[1]}')
             result['status'] = 'error'
             result['error'] = fetch[1]
             core.UPDATE_STATUS = result
@@ -256,18 +256,18 @@ class GitUpdater(UpdateBase):
 
         # check if we got a valid local hash
         if self.current_hash[2] == 1:
-            logging.error('Error getting local commit hash: {}'.format(self.current_hash[1]))
+            logging.error(f'Error getting local commit hash: {self.current_hash[1]}')
             result['status'] = 'error'
             result['error'] = self.current_hash[1]
             core.UPDATE_STATUS = result
             return result
         local_hash = self.current_hash[0]
-        logging.info('Current local hash: {}'.format(local_hash))
+        logging.info(f'Current local hash: {local_hash}')
 
         # try to get a history of commit hashes
         commit_history = self.git.get_commit_hash_history()
         if commit_history[2] == 1:
-            logging.error('Error getting git commit history: {}'.format(commit_history[1]))
+            logging.error(f'Error getting git commit history: {commit_history[1]}')
             result['status'] = 'error'
             result['error'] = commit_history[1]
             core.UPDATE_STATUS = result
@@ -285,7 +285,7 @@ class GitUpdater(UpdateBase):
                 return result
             # if not, find out how far behind we are
             else:
-                logging.debug('{} updates are available -- latest commit: {}.'.format(behind_count, commit_list[0]))
+                logging.debug(f'{behind_count} updates are available -- latest commit: {commit_list[0]}.')
 
                 result['status'] = 'behind'
                 result['behind_count'] = behind_count
@@ -347,7 +347,7 @@ class ZipUpdater(UpdateBase):
 
         Returns str
         '''
-        url = '{}/commits/{}'.format(core.GIT_API, self.branch)
+        url = f'{core.GIT_API}/commits/{self.branch}'
         try:
             result = json.loads(Url.open(url).text)
             return result['sha']
@@ -388,7 +388,7 @@ class ZipUpdater(UpdateBase):
             core.UPDATE_STATUS = result
             return result
 
-        url = '{}/compare/{}...{}'.format(core.GIT_API, newest_hash, local_hash)
+        url = f'{core.GIT_API}/compare/{newest_hash}...{local_hash}'
 
         try:
             result = json.loads(Url.open(url).text)
@@ -408,7 +408,7 @@ class ZipUpdater(UpdateBase):
             core.UPDATE_STATUS = result
             return result
         else:
-            logging.debug('{} updates are available -- latest commit: {}.'.format(behind_count, newest_hash))
+            logging.debug(f'{behind_count} updates are available -- latest commit: {newest_hash}.')
 
             result['status'] = 'behind'
             result['behind_count'] = behind_count
@@ -478,7 +478,7 @@ class ZipUpdater(UpdateBase):
         orig_log_handler = self.switch_log(handler)
 
         logging.info('Downloading latest Zip.')
-        zip_url = '{}/archive/{}.zip'.format(core.GIT_URL, self.branch)
+        zip_url = f'{core.GIT_URL}/archive/{self.branch}.zip'
         try:
             zip_bytes = Url.open(zip_url, stream=True).content
             with open(update_zip, 'wb') as f:
@@ -503,7 +503,7 @@ class ZipUpdater(UpdateBase):
         core.UPDATE_STATUS = None
 
         logging.info('Moving update files.')
-        subfolder = 'Watcher3-{}'.format(self.branch)
+        subfolder = f'Watcher3-{self.branch}'
         update_files_path = os.path.join(update_path, subfolder)
         try:
             files = os.listdir(update_files_path)

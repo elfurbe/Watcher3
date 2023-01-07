@@ -67,7 +67,7 @@ def restart():
     '''
     cherrypy.engine.stop()
     python = sys.executable
-    args = ['"{}"'.format(SCRIPT_PATH) if PLATFORM == 'windows' else SCRIPT_PATH] + sys.argv[1:]
+    args = [f'"{SCRIPT_PATH}"' if PLATFORM == 'windows' else SCRIPT_PATH] + sys.argv[1:]
     p = 'Server stopped -- respawning script as: \n {} {}'.format(python, *args)
     logging.info(p)
     print(p)

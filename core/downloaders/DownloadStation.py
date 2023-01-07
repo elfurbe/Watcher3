@@ -65,14 +65,14 @@ def _login(url, account, password):
 
     logging.info('Logging in to Synology')
 
-    url = '{}/webapi/auth.cgi?api=SYNO.API.Auth&version=2&method=login&account={}&passwd={}&session=DownloadStation&format=cookie'.format(url, account, password)
+    url = f'{url}/webapi/auth.cgi?api=SYNO.API.Auth&version=2&method=login&account={account}&passwd={password}&session=DownloadStation&format=cookie'
 
     try:
         response = Url.open(url)
 
         if response.status_code != 200:
             cookie = None
-            return '{}: {}'.format(response.status_code, response.reason)
+            return f'{response.status_code}: {response.reason}'
 
         response = json.loads(response.text)
         if not response['success']:
@@ -86,7 +86,7 @@ def _login(url, account, password):
     except Exception as e:
         cookie = None
         logging.error('Synology login failed', exc_info=True)
-        return '{}.'.format(e)
+        return f'{e}.'
 
 
 @auth_required
@@ -110,7 +110,7 @@ def add_nzb(data):
         response = Url.open(url)
 
         if response.status_code != 200:
-            return {'response': False, 'error': '{}: {}'.format(response.status_code, response.reason)}
+            return {'response': False, 'error': f'{response.status_code}: {response.reason}'}
         else:
             response = json.loads(response.text)
     except (SystemExit, KeyboardInterrupt):
@@ -146,7 +146,7 @@ def add_torrent(data):
         response = Url.open(url)
 
         if response.status_code != 200:
-            return {'response': False, 'error': '{}: {}'.format(response.status_code, response.reason)}
+            return {'response': False, 'error': f'{response.status_code}: {response.reason}'}
         else:
             response = json.loads(response.text)
     except (SystemExit, KeyboardInterrupt):
@@ -171,13 +171,13 @@ def get_task_id(url_base, uri):
     Returns str
     '''
 
-    url = '{}/webapi/DownloadStation/task.cgi?api=SYNO.DownloadStation.Task&version=2&method=list&additional=detail&_sid={}'.format(url_base, cookie)
+    url = f'{url_base}/webapi/DownloadStation/task.cgi?api=SYNO.DownloadStation.Task&version=2&method=list&additional=detail&_sid={cookie}'
 
     try:
         response = Url.open(url)
 
         if response.status_code != 200:
-            return '{}: {}'.format(response.status_code, response.reason)
+            return f'{response.status_code}: {response.reason}'
         else:
             response = json.loads(response.text)
 
@@ -199,13 +199,13 @@ def cancel_download(downloadid):
         logging.error('Unable to get task_id from DownloadStation')
         return False
 
-    url = '{}/webapi/DownloadStation/task.cgi?api=SYNO.DownloadStation.Task&version=1&method=delete&id={}&force_complete=false&_sid={}'.format(url_base, task_id, cookie)
+    url = f'{url_base}/webapi/DownloadStation/task.cgi?api=SYNO.DownloadStation.Task&version=1&method=delete&id={task_id}&force_complete=false&_sid={cookie}'
 
     try:
         response = Url.open(url)
 
         if response.status_code != 200:
-            return '{}: {}'.format(response.status_code, response.reason)
+            return f'{response.status_code}: {response.reason}'
         else:
             response = json.loads(response.text)
     except (SystemExit, KeyboardInterrupt):

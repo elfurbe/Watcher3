@@ -18,10 +18,10 @@ def base_url():
 def search(imdbid, term, ignore_if_imdbid_cap = False):
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
-    logging.info('Performing backlog search on LimeTorrents for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on LimeTorrents for {imdbid}.')
 
     host = base_url()
-    url = '{}/searchrss/{}'.format(host, term)
+    url = f'{host}/searchrss/{term}'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -46,7 +46,7 @@ def get_rss():
     logging.info('Fetching latest RSS from ')
 
     host = base_url()
-    url = '{}/rss/16/'.format(host)
+    url = f'{host}/rss/16/'
 
     try:
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -126,5 +126,5 @@ def _parse(xml, imdbid):
             logging.error('Error parsing LimeTorrents XML.', exc_info=True)
             continue
 
-    logging.info('Found {} results from Limetorrents.'.format(len(results)))
+    logging.info(f'Found {len(results)} results from Limetorrents.')
     return results

@@ -30,7 +30,7 @@ def sync_feed():
         return False
 
     if movies:
-        logging.info('Found {} movies in popular movies.'.format(len(movies)))
+        logging.info(f'Found {len(movies)} movies in popular movies.')
         _sync_new_movies(movies)
         logging.info('Popular movies sync complete.')
         return True
@@ -60,7 +60,7 @@ def _sync_new_movies(movies):
         imdbid = movie['imdb_id']
         movie = TheMovieDatabase._search_imdbid(imdbid)
         if not movie:
-            logging.warning('{} not found on TMDB. Cannot add.'.format(imdbid))
+            logging.warning(f'{imdbid} not found on TMDB. Cannot add.')
             continue
         else:
             movie = movie[0]

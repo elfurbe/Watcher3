@@ -32,7 +32,7 @@ def test_connection(config):
     try:
         error = client.connect()
         if error:
-            return '{}.'.format(error)
+            return f'{error}.'
     except Exception as e:
         logging.error('Unable to connect to Deluge RPC.', exc_info=True)
         return str(e)
@@ -120,7 +120,7 @@ def cancel_download(downloadid):
     downloadid: int download id
     Returns bool
     '''
-    logging.info('Cancelling DelugeRPC download # {}'.format(downloadid))
+    logging.info(f'Cancelling DelugeRPC download # {downloadid}')
 
     conf = core.CONFIG['Downloader']['Torrent']['DelugeRPC']
 
@@ -150,7 +150,7 @@ def _set_label(torrent, label, client):
 
     label = label_fix.sub('', label.lower())
 
-    logging.info('Applying label {} to torrent {} in DelugeRPC.'.format(label, torrent))
+    logging.info(f'Applying label {label} to torrent {torrent} in DelugeRPC.')
 
     try:
         deluge_labels = client.call('label.get_labels')
@@ -159,7 +159,7 @@ def _set_label(torrent, label, client):
         deluge_labels = []
 
     if label not in deluge_labels:
-        logging.info('Adding label {} to Deluge'.format(label))
+        logging.info(f'Adding label {label} to Deluge')
         try:
             client.call('label.add', label)
         except Exception as e:
@@ -169,7 +169,7 @@ def _set_label(torrent, label, client):
     try:
         l = client.call('label.set_torrent', torrent, label)
         if l == b'Unknown Label':
-            logging.error('Unknown label {}'.format(label))
+            logging.error(f'Unknown label {label}')
             return False
     except Exception as e:
         logging.error('Unable to set Deluge label.', exc_info=True)

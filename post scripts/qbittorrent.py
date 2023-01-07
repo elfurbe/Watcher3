@@ -60,7 +60,7 @@ data['guid'] = sys.argv[4]
 data['mode'] = 'complete'
 
 # Send info
-url = '{}/postprocessing/'.format(watcheraddress)
+url = f'{watcheraddress}/postprocessing/'
 post_data = urlencode(data).encode('ascii')
 
 request = request(url, post_data, headers={'User-Agent': 'Mozilla/5.0'})

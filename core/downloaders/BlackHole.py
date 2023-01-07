@@ -27,8 +27,8 @@ def test_connection(data):
         if os.access(directory, os.W_OK):
             return True
         else:
-            logging.error('Unable to write to directory {}.'.format(directory))
-            return 'Write access denied for {}.'.format(directory)
+            logging.error(f'Unable to write to directory {directory}.')
+            return f'Write access denied for {directory}.'
     else:
         try:
             tmp_file = os.path.join(directory, 'watcher.write')
@@ -36,7 +36,7 @@ def test_connection(data):
                 f.write('Watcher')
             os.remove(tmp_file)
         except Exception as e:
-            logging.error('Unable to write to directory {}.'.format(directory), exc_info=True)
+            logging.error(f'Unable to write to directory {directory}.', exc_info=True)
             return str(e)
         return True
 
@@ -55,7 +55,7 @@ def _download_link(url, file):
             f.write(dl_bytes)
         del dl_bytes
     except Exception as e:
-        logging.error('Could not download {}.'.format(url), exc_info=True)
+        logging.error(f'Could not download {url}.', exc_info=True)
         return False
 
     return True
@@ -86,7 +86,7 @@ def add_nzb(data):
     fp = os.path.join(directory, '{}.nzb'.format(data['title']))
 
     if _download_link(data['guid'], fp):
-        logging.info('NZB saved as {}.'.format(fp))
+        logging.info(f'NZB saved as {fp}.')
         return {'response': True, 'downloadid': None}
     else:
         logging.error('Could not download NZB.', exc_info=True)
@@ -112,7 +112,7 @@ def add_torrent(data):
         dl = _download_link(data['torrentfile'], fp)
 
     if dl:
-        logging.info('Torrent saved as {}.'.format(fp))
+        logging.info(f'Torrent saved as {fp}.')
         return {'response': True, 'downloadid': None}
     else:
         logging.error('Could not download Torrent.', exc_info=True)
@@ -137,7 +137,7 @@ def _download_magnet(data, path):
 
     try:
         logging.info('Attempting to resolve torrent hash through magnet2torrent.com')
-        dl_bytes = Url.open('http://magnet2torrent.com/upload/', post_data={'magnet': 'magnet:?xt=urn:btih:{}'.format(magnet_hash)}, stream=True).content
+        dl_bytes = Url.open('http://magnet2torrent.com/upload/', post_data={'magnet': f'magnet:?xt=urn:btih:{magnet_hash}'}, stream=True).content
         if _verify_torrent(dl_bytes, magnet_hash):
             logging.info('Torrent found on magnet2torrent.com')
             with open(path, 'wb') as f:
@@ -150,10 +150,10 @@ def _download_magnet(data, path):
     for i in bt_cache:
         try:
             url = i.format(magnet_hash)
-            logging.info('Attempting to resolve torrent hash through {}'.format(url))
+            logging.info(f'Attempting to resolve torrent hash through {url}')
             dl_bytes = Url.open(url, stream=True).content
             if _verify_torrent(dl_bytes, magnet_hash):
-                logging.info('Torrent found at {}'.format(url))
+                logging.info(f'Torrent found at {url}')
                 with open(path, 'wb') as f:
                     f.write(dl_bytes)
                 del dl_bytes
@@ -161,12 +161,12 @@ def _download_magnet(data, path):
             else:
                 continue
         except Exception as e:
-            logging.warning('Unable to resolve magnet hash through {}.'.format(i), exc_info=True)
+            logging.warning(f'Unable to resolve magnet hash through {i}.', exc_info=True)
             continue
 
-    logging.warning('Torrent hash {} not found on any torrent cache.'.format(magnet_hash))
+    logging.warning(f'Torrent hash {magnet_hash} not found on any torrent cache.')
 
-    logging.warning('Creating a torrent file from hash {}.'.format(magnet_hash))
+    logging.warning(f'Creating a torrent file from hash {magnet_hash}.')
 
     tf_elements = ['d10:magnet-uri',
                    'LENGTH',

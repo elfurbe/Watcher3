@@ -44,7 +44,7 @@ class SQL:
 
     def __init__(self):
         self.metadata = sqla.MetaData()
-        DB_NAME = 'sqlite:///{}'.format(core.DB_FILE)
+        DB_NAME = f'sqlite:///{core.DB_FILE}'
 
         # These definitions only exist to CREATE tables.
         self.MOVIES = sqla.Table('MOVIES', self.metadata,
@@ -123,11 +123,11 @@ class SQL:
         try:
             self.engine = sqla.create_engine(DB_NAME, echo=False, connect_args={'timeout': 30})
             if not os.path.isfile(core.DB_FILE):
-                print('Creating database file {}'.format(core.DB_FILE))
+                print(f'Creating database file {core.DB_FILE}')
                 self.create_database(DB_NAME)
             else:
-                logging.info('Connected to database {}'.format(DB_NAME))
-                print('Connected to database {}'.format(DB_NAME))
+                logging.info(f'Connected to database {DB_NAME}')
+                print(f'Connected to database {DB_NAME}')
 
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -146,8 +146,8 @@ class SQL:
         self.metadata.create_all(self.engine)
         self.engine = sqla.create_engine(DB_NAME, echo=False, connect_args={'timeout': 30})
         self.set_version(current_version)
-        logging.info('Connected to database {}'.format(DB_NAME))
-        print('Connected to database {}'.format(DB_NAME))
+        logging.info(f'Connected to database {DB_NAME}')
+        print(f'Connected to database {DB_NAME}')
         return
 
     def execute(self, command):
@@ -165,7 +165,7 @@ class SQL:
         Returns object sqlalchemy ResultProxy of command, or None if unable to execute
         '''
 
-        logging.debug('Executing SQL command: {}'.format(command))
+        logging.debug(f'Executing SQL command: {command}')
 
         tries = 0
         while tries < 5:
@@ -173,13 +173,13 @@ class SQL:
                 return self.engine.execute(*command)
 
             except Exception as e:
-                logging.error('SQL Database Query: {}.'.format(command), exc_info=True)
+                logging.error(f'SQL Database Query: {command}.', exc_info=True)
                 if 'database is locked' in e.args[0]:
-                    logging.debug('SQL Query attempt # {}.'.format(tries))
+                    logging.debug(f'SQL Query attempt # {tries}.')
                     tries += 1
                     time.sleep(1)
                 else:
-                    logging.error('SQL Databse Query: {}.'.format(command), exc_info=True)
+                    logging.error(f'SQL Databse Query: {command}.', exc_info=True)
                     return None
         # all tries exhausted
         return None
@@ -192,14 +192,14 @@ class SQL:
         Returns Bool
         '''
 
-        logging.debug('Writing data to {}.'.format(TABLE))
+        logging.debug(f'Writing data to {TABLE}.')
 
         cols = ', '.join(DB_STRING.keys())
         vals = list(DB_STRING.values())
 
         qmarks = ', '.join(['?'] * len(DB_STRING))
 
-        sql = 'INSERT INTO {} ( {} ) VALUES ( {} )'.format(TABLE, cols, qmarks)
+        sql = f'INSERT INTO {TABLE} ( {cols} ) VALUES ( {qmarks} )'
 
         command = [sql, vals]
 
@@ -251,7 +251,7 @@ class SQL:
 
         logging.debug('Updating {} to {} for rows that match {}:{} in {}.'.format(COLUMN, VALUE, idcol, idval.split('&')[0], TABLE))
 
-        sql = 'UPDATE {} SET {}=? WHERE {}=? COLLATE NOCASE'.format(TABLE, COLUMN, idcol)
+        sql = f'UPDATE {TABLE} SET {COLUMN}=? WHERE {idcol}=? COLLATE NOCASE'
         vals = (VALUE, idval)
 
         command = [sql, vals]
@@ -272,10 +272,10 @@ class SQL:
         Returns Bool.
         '''
 
-        logging.debug('Updating to {} in {}.'.format(data, TABLE))
+        logging.debug(f'Updating to {data} in {TABLE}.')
 
         columns = '{}=?'.format('=?,'.join(data.keys()))
-        sql = 'UPDATE {} SET {}'.format(TABLE, columns)
+        sql = f'UPDATE {TABLE} SET {columns}'
         vals = list(data.values())
 
         command = [sql, vals]
@@ -300,7 +300,7 @@ class SQL:
 
         columns = '{}=?'.format('=?,'.join(data.keys()))
 
-        sql = 'UPDATE {} SET {} WHERE {}=?'.format(TABLE, columns, idcol)
+        sql = f'UPDATE {TABLE} SET {columns} WHERE {idcol}=?'
 
         vals = tuple(list(data.values()) + [idval])
 
@@ -338,7 +338,7 @@ class SQL:
             logging.error('id_col not in values.')
             return False
 
-        id_col_ = '{}_'.format(id_col)
+        id_col_ = f'{id_col}_'
 
         for d in values:
             d[id_col_] = d[id_col]
@@ -371,7 +371,7 @@ class SQL:
         if status:
             filters.append('status IN ("{}")'.format('", "'.join(status)))
         if category:
-            filters.append('category = "{}"'.format(category))
+            filters.append(f'category = "{category}"')
         if filters:
             filters = "WHERE {}".format(' AND '.join(filters))
 
@@ -385,12 +385,12 @@ class SQL:
                           END
                        '''
 
-        command = 'SELECT * FROM MOVIES {} ORDER BY {} {}'.format(filters, sort_key, sort_direction)
+        command = f'SELECT * FROM MOVIES {filters} ORDER BY {sort_key} {sort_direction}'
 
         command += ', sort_title ASC' if sort_key != 'sort_title' else ''
 
         if int(limit) > 0:
-            command += ' LIMIT {} OFFSET {}'.format(limit, offset)
+            command += f' LIMIT {limit} OFFSET {offset}'
 
         result = self.execute([command])
 
@@ -411,12 +411,12 @@ class SQL:
 
         filters = ''
         if col and val:
-            filters = 'WHERE {} = "{}"'.format(col, val)
+            filters = f'WHERE {col} = "{val}"'
 
         if group_col:
-            query = 'SELECT {}, COUNT(1) FROM MOVIES {} GROUP BY {}'.format(group_col, filters, group_col)
+            query = f'SELECT {group_col}, COUNT(1) FROM MOVIES {filters} GROUP BY {group_col}'
         else:
-            query = 'SELECT COUNT(1) FROM MOVIES {}'.format(filters)
+            query = f'SELECT COUNT(1) FROM MOVIES {filters}'
 
         result = self.execute([query])
         if result:
@@ -438,9 +438,9 @@ class SQL:
         Returns dict of first match
         '''
 
-        logging.debug('Retrieving details for movie {}.'.format(idval))
+        logging.debug(f'Retrieving details for movie {idval}.')
 
-        command = ['SELECT * FROM MOVIES WHERE {}="{}"'.format(idcol, idval)]
+        command = [f'SELECT * FROM MOVIES WHERE {idcol}="{idval}"']
 
         result = self.execute(command)
 
@@ -463,7 +463,7 @@ class SQL:
         Returns list with dict of matches
         '''
 
-        logging.debug('Retrieving status for movies {}.'.format(idvals))
+        logging.debug(f'Retrieving status for movies {idvals}.')
 
         command = ['SELECT {}, status FROM MOVIES WHERE {} IN ({})'.format(idcol, idcol, ', '.join(map(str, idvals)))]
 
@@ -488,7 +488,7 @@ class SQL:
         Returns list of dicts for all SEARCHRESULTS that match imdbid
         '''
 
-        logging.debug('Retrieving Search Results for {}.'.format(imdbid))
+        logging.debug(f'Retrieving Search Results for {imdbid}.')
 
         if quality in core.CONFIG['Quality']['Profiles'] and core.CONFIG['Quality']['Profiles'][quality]['prefersmaller']:
             sort = 'ASC'
@@ -509,7 +509,7 @@ class SQL:
         else:
             rejected_cond = ''
 
-        command = ['SELECT * FROM SEARCHRESULTS WHERE imdbid="{}" {} ORDER BY score DESC {}, size {}, freeleech DESC'.format(imdbid, rejected_cond, sk, sort)]
+        command = [f'SELECT * FROM SEARCHRESULTS WHERE imdbid="{imdbid}" {rejected_cond} ORDER BY score DESC {sk}, size {sort}, freeleech DESC']
 
         results = self.execute(command)
 
@@ -525,13 +525,13 @@ class SQL:
         Returns dict {guid:status, guid:status, etc}
         '''
 
-        logging.debug('Retrieving Marked Results for {}.'.format(imdbid))
+        logging.debug(f'Retrieving Marked Results for {imdbid}.')
 
         TABLE = 'MARKEDRESULTS'
 
         results = {}
 
-        command = ['SELECT * FROM {} WHERE imdbid="{}"'.format(TABLE, imdbid)]
+        command = [f'SELECT * FROM {TABLE} WHERE imdbid="{imdbid}"']
 
         data = self.execute(command)
 
@@ -552,7 +552,7 @@ class SQL:
         Returns bool (True/False on success or None if movie not found)
         '''
 
-        logging.debug('Removing {} from database.'.format(imdbid))
+        logging.debug(f'Removing {imdbid} from database.')
 
         if not self.row_exists('MOVIES', imdbid=imdbid):
             return None
@@ -564,7 +564,7 @@ class SQL:
             if not self.purge_search_results(imdbid=imdbid):
                 return False
 
-        logging.debug('{} removed.'.format(imdbid))
+        logging.debug(f'{imdbid} removed.')
         return True
 
     def delete(self, TABLE, idcol, idval):
@@ -578,7 +578,7 @@ class SQL:
 
         logging.debug('Removing from {} where {} is {}.'.format(TABLE, idcol, idval.split('&')[0]))
 
-        command = ['DELETE FROM {} WHERE {}="{}"'.format(TABLE, idcol, idval)]
+        command = [f'DELETE FROM {TABLE} WHERE {idcol}="{idval}"']
 
         if self.execute(command):
             return True
@@ -598,8 +598,8 @@ class SQL:
         '''
 
         if imdbid:
-            logging.debug('Purging search results for {}'.format(imdbid))
-            command = ['DELETE FROM SEARCHRESULTS WHERE imdbid="{}"'.format(imdbid)]
+            logging.debug(f'Purging search results for {imdbid}')
+            command = [f'DELETE FROM SEARCHRESULTS WHERE imdbid="{imdbid}"']
         else:
             logging.debug('Purging search results for all movies.')
             command = ['DELETE FROM SEARCHRESULTS']
@@ -625,7 +625,7 @@ class SQL:
 
         logging.debug('Getting distinct values for {} in {}'.format(idval.split('&')[0], TABLE))
 
-        command = ['SELECT DISTINCT {} FROM {} WHERE {}="{}"'.format(column, TABLE, idcol, idval)]
+        command = [f'SELECT DISTINCT {column} FROM {TABLE} WHERE {idcol}="{idval}"']
 
         data = self.execute(command)
 
@@ -652,7 +652,7 @@ class SQL:
         Returns Bool
         '''
 
-        matches = ['{}="{}"'.format(k, v) for k, v in cols.items()]
+        matches = [f'{k}="{v}"' for k, v in cols.items()]
 
         logging.debug('Checking if {} exists in database table {}'.format(','.join(matches), TABLE))
 
@@ -709,7 +709,7 @@ class SQL:
         logging.debug('Retrieving search result details for {}.'.format(idval.split('&')[0]))
 
         operator = 'LIKE' if like else '='
-        command = ['SELECT * FROM SEARCHRESULTS WHERE {} {} "{}" COLLATE NOCASE ORDER BY score DESC, size DESC'.format(idcol, operator, idval)]
+        command = [f'SELECT * FROM SEARCHRESULTS WHERE {idcol} {operator} "{idval}" COLLATE NOCASE ORDER BY score DESC, size DESC']
 
         result = self.execute(command)
 
@@ -743,7 +743,7 @@ class SQL:
 
         for i in tables:
             i = i[0]
-            command = ['PRAGMA table_info({})'.format(i)]
+            command = [f'PRAGMA table_info({i})']
             columns = self.execute(command)
             if not columns:
                 continue
@@ -800,50 +800,50 @@ class SQL:
         '''
         for table, schema in diff.items():
             if table not in existing:
-                logging.debug('Creating table {}'.format(table))
-                print('Creating table {}'.format(table))
+                logging.debug(f'Creating table {table}')
+                print(f'Creating table {table}')
                 getattr(self, table).create(self.engine)
                 continue
-            logging.debug('Modifying table {}.'.format(table))
-            print('Modifying table {}'.format(table))
+            logging.debug(f'Modifying table {table}.')
+            print(f'Modifying table {table}')
             for name, kind in schema.items():
-                command = ['ALTER TABLE {} ADD COLUMN {} {}'.format(table, name, kind)]
+                command = [f'ALTER TABLE {table} ADD COLUMN {name} {kind}']
 
                 self.execute(command)
 
                 if table in SQL.convert_names.keys():
                     for pair in SQL.convert_names[table]:
                         if pair[0] == name:
-                            command = ['UPDATE {} SET {} = {}'.format(table, pair[0], pair[1])]
+                            command = [f'UPDATE {table} SET {pair[0]} = {pair[1]}']
                             self.execute(command)
 
             # move TABLE to TABLE_TMP
-            table_tmp = '{}_TMP'.format(table)
-            logging.debug('Renaming table to {}.'.format(table_tmp))
-            print('Renaming table to {}'.format(table_tmp))
-            command = ['ALTER TABLE {} RENAME TO {}'.format(table, table_tmp)]
+            table_tmp = f'{table}_TMP'
+            logging.debug(f'Renaming table to {table_tmp}.')
+            print(f'Renaming table to {table_tmp}')
+            command = [f'ALTER TABLE {table} RENAME TO {table_tmp}']
             self.execute(command)
 
             # create new table
-            logging.debug('Creating new table {}.'.format(table))
-            print('Creating new table {}'.format(table))
+            logging.debug(f'Creating new table {table}.')
+            print(f'Creating new table {table}')
             table_meta = getattr(self, table)
             table_meta.create(self.engine)
 
             # copy data over
-            logging.debug('Merging data from {} to {}.'.format(table_tmp, table))
-            print('Merging data from {} to {}'.format(table_tmp, table))
+            logging.debug(f'Merging data from {table_tmp} to {table}.')
+            print(f'Merging data from {table_tmp} to {table}')
             names = ', '.join(intended[table].keys())
-            command = ['INSERT INTO {} ({}) SELECT {} FROM {}'.format(table, names, names, table_tmp)]
+            command = [f'INSERT INTO {table} ({names}) SELECT {names} FROM {table_tmp}']
             self.execute(command)
 
-            logging.debug('Dropping table {}.'.format(table_tmp))
-            print('Dropping table {}'.format(table_tmp))
-            command = ['DROP TABLE {}'.format(table_tmp)]
+            logging.debug(f'Dropping table {table_tmp}.')
+            print(f'Dropping table {table_tmp}')
+            command = [f'DROP TABLE {table_tmp}']
             self.execute(command)
 
-            logging.debug('Finished updating table {}.'.format(table))
-            print('Finished updating table {}'.format(table))
+            logging.debug(f'Finished updating table {table}.')
+            print(f'Finished updating table {table}')
 
             return True
 
@@ -854,9 +854,9 @@ class SQL:
         Returns list of caps ie ['q', 'imdbid'] or []
         '''
 
-        logging.debug('Retreiving caps for {}'.format(url))
+        logging.debug(f'Retreiving caps for {url}')
 
-        command = ['SELECT "caps" FROM CAPS WHERE url="{}"'.format(url)]
+        command = [f'SELECT "caps" FROM CAPS WHERE url="{url}"']
 
         row = self.execute(command)
         caps = row.fetchone()
@@ -878,7 +878,7 @@ class SQL:
 
         Does not return
         '''
-        self.execute(['PRAGMA user_version = {}'.format(v)])
+        self.execute([f'PRAGMA user_version = {v}'])
 
     def update_database(self):
         ''' Handles database updates
@@ -888,15 +888,15 @@ class SQL:
             return
 
         print('Database update required. This may take some time.')
-        logging.info('Updating database to version {}.'.format(current_version))
+        logging.info(f'Updating database to version {current_version}.')
 
         backup_dir = os.path.join(core.PROG_PATH, 'db')
-        logging.debug('Backing up database to {}.'.format(backup_dir))
-        print('Backing up database to {}.'.format(backup_dir))
+        logging.debug(f'Backing up database to {backup_dir}.')
+        print(f'Backing up database to {backup_dir}.')
         try:
             if not os.path.isdir(backup_dir):
                 os.mkdir(backup_dir)
-            backup_name = '{}.backup-{}'.format(core.DB_FILE, datetime.date.today())
+            backup_name = f'{core.DB_FILE}.backup-{datetime.date.today()}'
 
             shutil.copyfile(core.DB_FILE, os.path.join(backup_dir, backup_name))
         except Exception as e:
@@ -905,9 +905,9 @@ class SQL:
             raise
 
         for i in range(v + 1, current_version + 1):
-            logging.info('Executing Database Update {}'.format(i))
-            print('Executing database update {}'.format(i))
-            m = getattr(DatabaseUpdate, 'update_{}'.format(i))
+            logging.info(f'Executing Database Update {i}')
+            print(f'Executing database update {i}')
+            m = getattr(DatabaseUpdate, f'update_{i}')
             m()
 
         self.set_version(current_version)
@@ -921,7 +921,7 @@ class SQL:
 
         Returns list of dicts
         '''
-        return proxy_to_dict(self.execute(['SELECT * FROM {}'.format(table)]))
+        return proxy_to_dict(self.execute([f'SELECT * FROM {table}']))
 
     def system(self, name):
         ''' Gets 'data' column from SYSTEM table for name
@@ -930,7 +930,7 @@ class SQL:
         Returns str
         '''
 
-        cmd = 'SELECT data FROM SYSTEM WHERE name="{}"'.format(name)
+        cmd = f'SELECT data FROM SYSTEM WHERE name="{name}"'
 
         result = self.execute([cmd])
 
@@ -992,7 +992,7 @@ class DatabaseUpdate:
         l = len(d)
 
         for ind, i in enumerate(d):
-            print('{}%\r'.format(int((ind + 1) / l * 100)), end='')
+            print(f'{int((ind + 1) / l * 100)}%\r', end='')
             p = i['poster']
             if p and 'poster/' in p:
                 core.sql.update('MOVIES', 'poster', p.replace('poster/', 'posters/'), 'imdbid', i['imdbid'])
@@ -1014,7 +1014,7 @@ class DatabaseUpdate:
         l = len(d)
 
         for ind, i in enumerate(d):
-            print('{}%\r'.format(int((ind + 1) / l * 100)), end='')
+            print(f'{int((ind + 1) / l * 100)}%\r', end='')
             t = i['title']
             if t.startswith('The '):
                 t = t[4:] + ', The'
@@ -1037,7 +1037,7 @@ class DatabaseUpdate:
         l = len(d)
 
         for ind, i in enumerate(d):
-            print('{}%\r'.format(int((ind + 1) / l * 100)), end='')
+            print(f'{int((ind + 1) / l * 100)}%\r', end='')
             if not i.get('imdbid') and i.get('guid'):
                 core.sql.delete('SEARCHRESULTS', 'guid', i['guid'])
         print()
@@ -1051,7 +1051,7 @@ class DatabaseUpdate:
         l = len(d)
 
         for ind, i in enumerate(d):
-            print('{}%\r'.format(int((ind + 1) / l * 100)), end='')
+            print(f'{int((ind + 1) / l * 100)}%\r', end='')
             if i['poster']:
                 p = i['poster'].split('/')[-1]
                 values.append({'imdbid': i['imdbid'], 'poster': p})
@@ -1080,7 +1080,7 @@ class DatabaseUpdate:
         l = len(d)
 
         for ind, i in enumerate(d):
-            print('{}%\r'.format(int((ind + 1) / l * 100)), end='')
+            print(f'{int((ind + 1) / l * 100)}%\r', end='')
             if i['imdbid'] and not i['imdbid'].startswith('tt'):
                 n = 'tt' + i['imdbid']
                 values.append({'imdbid': n, 'guid': i['guid']})
@@ -1101,7 +1101,7 @@ class DatabaseUpdate:
         l = len(d)
 
         for ind, i in enumerate(d):
-            print('{}%\r'.format(int((ind + 1) / l * 100)), end='')
+            print(f'{int((ind + 1) / l * 100)}%\r', end='')
             if not i['filters']:
                 values.append({'imdbid': i['imdbid'], 'filters': '{"preferredwords": "", "requiredwords": "", "ignoredwords": ""}'})
         if values:

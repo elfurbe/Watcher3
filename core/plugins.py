@@ -25,12 +25,12 @@ def list_plugins():
             a = [i for i in os.listdir(p_dir) if i.endswith('.py') and not i.startswith('.')]
 
             for p in a:
-                c_file = '{}.conf'.format(p[:-3])
+                c_file = f'{p[:-3]}.conf'
                 c = c_file if os.path.isfile(os.path.join(p_dir, c_file)) else None
                 plugins[folder].append((p, c))
 
         except Exception as e:
-            logging.error('Unable to read {} plugins folder'.format(folder), exc_info=True)
+            logging.error(f'Unable to read {folder} plugins folder', exc_info=True)
 
     return plugins
 
@@ -221,7 +221,7 @@ def execute(plugins, args):
 
     for plugin in plugins:
 
-        conf_file = '{}.conf'.format(os.path.splitext(plugin)[0])
+        conf_file = f'{os.path.splitext(plugin)[0]}.conf'
 
         try:
             if os.path.isfile(conf_file):
@@ -232,7 +232,7 @@ def execute(plugins, args):
             else:
                 config = {}
         except Exception as e:
-            logging.error('Loading config {} failed.'.format(conf_file), exc_info=True)
+            logging.error(f'Loading config {conf_file} failed.', exc_info=True)
             continue
 
         config = json.dumps(config)
@@ -247,7 +247,7 @@ def execute(plugins, args):
         name = os.path.split(plugin)[1]
 
         try:
-            logging.debug('Executing plugin {} as {}.'.format(name, command))
+            logging.debug(f'Executing plugin {name} as {command}.')
 
             process = subprocess.Popen(command,
                                        stdin=subprocess.PIPE,
@@ -260,14 +260,14 @@ def execute(plugins, args):
             exit_code = process.returncode
 
             for line in output.splitlines():
-                logging.info('{} - {}'.format(name, line))
+                logging.info(f'{name} - {line}')
             if exit_code == 0:
                 logging.info('{} - Execution finished. Exit code {}.'.format(name, '0'))
             else:
-                logging.warning('{} - Execution failed. Exit code {}.'.format(name, exit_code))
+                logging.warning(f'{name} - Execution failed. Exit code {exit_code}.')
 
         except Exception as e:
-            logging.error('Executing plugin {} failed.'.format(plugin), exc_info=True)
+            logging.error(f'Executing plugin {plugin} failed.', exc_info=True)
             continue
 
     return

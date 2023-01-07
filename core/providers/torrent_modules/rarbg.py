@@ -56,7 +56,7 @@ def search(imdbid, term, ignore_if_imdbid_cap = False):
     proxy_enabled = core.CONFIG['Server']['Proxy']['enabled']
 
     host = base_url()
-    logging.info('Performing backlog search on Rarbg for {}.'.format(imdbid))
+    logging.info(f'Performing backlog search on Rarbg for {imdbid}.')
     if timeout:
         now = datetime.datetime.now()
         while timeout > now:
@@ -64,7 +64,7 @@ def search(imdbid, term, ignore_if_imdbid_cap = False):
             now = datetime.datetime.now()
 
     try:
-        url = '{}/pubapi_v2.php?token={}&mode=search&search_imdb={}&category=14;48;17;44;45;47;50;51;52;42;46;54&format=json_extended&app_id=Watcher'.format(host, _token(), imdbid)
+        url = f'{host}/pubapi_v2.php?token={_token()}&mode=search&search_imdb={imdbid}&category=14;48;17;44;45;47;50;51;52;42;46;54&format=json_extended&app_id=Watcher'
 
         timeout = datetime.datetime.now() + datetime.timedelta(seconds=2)
 
@@ -107,7 +107,7 @@ def get_rss():
             now = datetime.datetime.now()
 
     try:
-        url = '{}/pubapi_v2.php?token={}&mode=list&category=movies&format=json_extended&app_id=Watcher'.format(host, _token())
+        url = f'{host}/pubapi_v2.php?token={_token()}&mode=list&category=movies&format=json_extended&app_id=Watcher'
         timeout = datetime.datetime.now() + datetime.timedelta(seconds=2)
 
         if proxy_enabled and core.proxy.whitelist(host) is True:
@@ -138,7 +138,7 @@ def _get_token():
     '''
     logging.info('Getting RarBG access token.')
     host = base_url()
-    url = '{}/pubapi_v2.php?get_token=get_token&app_id=Watcher'.format(host)
+    url = f'{host}/pubapi_v2.php?get_token=get_token&app_id=Watcher'
 
     try:
         result = json.loads(Url.open(url).text)
@@ -158,7 +158,7 @@ def _parse(results, imdbid=None):
     Returns list of dicts
     '''
 
-    logging.info('Parsing {} Rarbg results.'.format(len(results)))
+    logging.info(f'Parsing {len(results)} Rarbg results.')
     item_keep = ('size', 'pubdate', 'title', 'indexer', 'info_link', 'guid', 'torrentfile', 'resolution', 'type', 'seeders', 'leechers')
 
     parsed_results = []
@@ -182,7 +182,7 @@ def _parse(results, imdbid=None):
         result['download_client'] = None
         parsed_results.append(result)
 
-    logging.info('Found {} results from rarbg'.format(len(parsed_results)))
+    logging.info(f'Found {len(parsed_results)} results from rarbg')
     return parsed_results
 
 

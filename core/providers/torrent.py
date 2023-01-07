@@ -34,7 +34,7 @@ def magnet(hash_, title):
     Returns str margnet uri
     '''
 
-    return 'magnet:?xt=urn:btih:{}&dn={}&tr={}'.format(hash_, title, trackers)
+    return f'magnet:?xt=urn:btih:{hash_}&dn={title}&tr={trackers}'
 
 
 class Torrent(NewzNabProvider):
@@ -56,13 +56,13 @@ class Torrent(NewzNabProvider):
 
         results = []
 
-        term = Url.normalize('{} {}'.format(title, year))
+        term = Url.normalize(f'{title} {year}')
 
         for indexer in torz_indexers:
             if indexer[2] is False:
                 continue
             url_base = indexer[0]
-            logging.info('Searching TorzNab indexer {}'.format(url_base))
+            logging.info(f'Searching TorzNab indexer {url_base}')
             if url_base[-1] != '/':
                 url_base = url_base + '/'
             apikey = indexer[1]
@@ -72,19 +72,19 @@ class Torrent(NewzNabProvider):
             if not caps:
                 caps = self._get_caps(url_base, apikey)
                 if caps is None:
-                    logging.error('Unable to get caps for {}'.format(url_base))
+                    logging.error(f'Unable to get caps for {url_base}')
                     continue
 
             if 'imdbid' in caps:
                 if ignore_if_imdbid_cap:
                     return results
-                logging.info('{} supports imdbid search.'.format(url_base))
+                logging.info(f'{url_base} supports imdbid search.')
                 r = self.search_newznab(url_base, apikey, 'movie', imdbid=imdbid)
             else:
-                logging.info('{} does not support imdbid search, using q={}'.format(url_base, term))
+                logging.info(f'{url_base} does not support imdbid search, using q={term}')
                 r = self.search_newznab(url_base, apikey, 'search', q=term, imdbid=imdbid)
                 if not r and no_year:
-                    logging.info('{} does not find anything, trying without year, using q={}'.format(url_base, title))
+                    logging.info(f'{url_base} does not find anything, trying without year, using q={title}')
                     r = self.search_newznab(url_base, apikey, 'search', q=title, imdbid=imdbid)
             for i in r:
                 results.append(i)
@@ -92,7 +92,7 @@ class Torrent(NewzNabProvider):
         for indexer, settings in core.CONFIG['Indexers']['Torrent'].items():
             if settings['enabled']:
                 if not hasattr(torrent_modules, indexer):
-                    logging.warning('Torrent indexer {} enabled but not found in torrent_modules.'.format(indexer))
+                    logging.warning(f'Torrent indexer {indexer} enabled but not found in torrent_modules.')
                     continue
                 else:
                     for i in getattr(torrent_modules, indexer).search(imdbid, term, ignore_if_imdbid_cap):
@@ -102,7 +102,7 @@ class Torrent(NewzNabProvider):
         for indexer, indexerobject in core.CONFIG['Indexers']['PrivateTorrent'].items():
             if indexerobject['enabled']:
                 if not hasattr(torrent_modules, indexer):
-                    logging.warning('Torrent indexer {} enabled but not found in torrent_modules.'.format(indexer))
+                    logging.warning(f'Torrent indexer {indexer} enabled but not found in torrent_modules.')
                     continue
                 else:
                     for i in getattr(torrent_modules, indexer).search(imdbid, term, ignore_if_imdbid_cap):
@@ -126,7 +126,7 @@ class Torrent(NewzNabProvider):
         for indexer, settings in core.CONFIG['Indexers']['Torrent'].items():
             if settings['enabled']:
                 if not hasattr(torrent_modules, indexer):
-                    logging.warning('Torrent indexer {} enabled but not found in torrent_modules.'.format(indexer))
+                    logging.warning(f'Torrent indexer {indexer} enabled but not found in torrent_modules.')
                     continue
                 else:
                     for i in getattr(torrent_modules, indexer).get_rss():
@@ -144,9 +144,9 @@ class Torrent(NewzNabProvider):
         Returns list of caps
         '''
 
-        logging.info('Getting caps for {}'.format(url_base))
+        logging.info(f'Getting caps for {url_base}')
 
-        url = '{}api?apikey={}&t=caps'.format(url_base, apikey)
+        url = f'{url_base}api?apikey={apikey}&t=caps'
 
         try:
             xml = Url.open(url).text
