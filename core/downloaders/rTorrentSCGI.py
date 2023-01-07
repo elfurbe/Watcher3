@@ -1,5 +1,5 @@
 import logging
-from lib import rtorrent
+import rtorrent_xmlrpc
 import core
 import xmlrpc.client
 from core.helpers import Torrent
@@ -26,7 +26,7 @@ def test_connection(data):
 
     url = 'scgi://{}:{}'.format(host, port)
 
-    client = rtorrent.SCGIServerProxy(url, encoding='utf-8')
+    client = rtorrent_xmlrpc.SCGIServerProxy(url, encoding='utf-8')
 
     try:
         client.system.time()
