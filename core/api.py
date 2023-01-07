@@ -284,7 +284,7 @@ def api_json_out(func):
     return decor
 
 
-class API(object):
+class API:
 
     @cherrypy.expose()
     def default(self, **params):

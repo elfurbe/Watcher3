@@ -15,7 +15,7 @@ import re
 logging.getLogger('lib.requests').setLevel(logging.CRITICAL)
 
 
-class Url(object):
+class Url:
     ''' Creates url requests and sanitizes urls '''
 
     proxies = None
@@ -96,7 +96,7 @@ class Url(object):
         return r
 
 
-class Conversions(object):
+class Conversions:
     ''' Coverts data formats. '''
 
     @staticmethod
@@ -139,7 +139,7 @@ class Conversions(object):
         return dt.strftime('%A, %b %d, at %H:%M')
 
 
-class Torrent(object):
+class Torrent:
 
     @staticmethod
     def get_hash(torrent, file_bytes=False):
@@ -183,7 +183,7 @@ class Torrent(object):
         else:
             return ''
 
-class Comparisons(object):
+class Comparisons:
 
     @staticmethod
     def compare_dict(new, existing, parent=''):

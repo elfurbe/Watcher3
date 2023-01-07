@@ -23,7 +23,7 @@ def proxy_to_dict(p):
     return [dict(i) for i in p]
 
 
-class SQL(object):
+class SQL:
     '''
     Class to handle all database interactions
 
@@ -956,7 +956,7 @@ class SQL(object):
         return [tuple(i) for i in result.fetchall()] if result else []
 
 
-class DatabaseUpdate(object):
+class DatabaseUpdate:
     ''' namespace for database update methods
     There is one method for each database version. These methods are NOT
         cumulative and MUST be executed in order.

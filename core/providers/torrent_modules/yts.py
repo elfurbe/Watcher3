@@ -2,7 +2,7 @@ import core
 import logging
 from core.helpers import Url
 import json
-import xml.etree.cElementTree as ET
+import xml.etree.ElementTree as ET
 
 logging = logging.getLogger(__name__)
 

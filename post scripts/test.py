@@ -57,7 +57,7 @@ print('  2 Failed')
 mode = input('  [1, 2]: ')
 data['mode'] = 'failed' if mode == '2' else 'complete'
 
-url = u'{}/postprocessing/'.format(watcheraddress)
+url = '{}/postprocessing/'.format(watcheraddress)
 post_data = urlencode(data).encode('ascii')
 
 print('========================')

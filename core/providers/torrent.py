@@ -1,4 +1,4 @@
-from xml.etree.cElementTree import fromstring
+from xml.etree.ElementTree import fromstring
 from xmljson import yahoo
 import core
 from core.helpers import Url

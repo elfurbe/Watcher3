@@ -24,7 +24,7 @@ def manager():
     return GitUpdater('master') if os.path.exists('.git') else ZipUpdater('master')
 
 
-class UpdateBase(object):
+class UpdateBase:
     ''' Base class for updater instances '''
 
     def update_check(self, add_notif=True, install=True):
@@ -72,7 +72,7 @@ class UpdateBase(object):
         return data
 
 
-class Git(object):
+class Git:
     ''' Class used to execute all GIT commands. '''
 
     def runner(self, args):
@@ -331,7 +331,7 @@ class ZipUpdater(UpdateBase):
         logging.debug('Retreiving local commit hash.')
 
         if os.path.isfile(self.version_file):
-            with open(self.version_file, 'r') as f:
+            with open(self.version_file) as f:
                 hash = f.read()
             return hash
         else:
@@ -536,7 +536,7 @@ class ZipUpdater(UpdateBase):
 
         logging.info('Merging update log with master.')
         with open(orig_log_handler.baseFilename, 'a') as log:
-            with open(os.path.join(update_path, 'log.txt'), 'r') as u_log:
+            with open(os.path.join(update_path, 'log.txt')) as u_log:
                 log.write(u_log.read())
 
         logging.info('Changing log handler back to original.')

@@ -39,7 +39,7 @@ for script in scripts:
     if verbose:
         print('Parsing {}'.format(script))
 
-    with open(script, 'r') as f:
+    with open(script) as f:
         t = f.read()
         t = t.split('_("')[1:]
         if len(t) == 0:

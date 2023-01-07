@@ -40,7 +40,7 @@ def create_plugin():
     core.scheduler_plugin.subscribe()
 
 
-class record_handler(object):
+class record_handler:
     @staticmethod
     def read():
         return {i['name']: {'last_execution': i['last_execution']} for i in core.sql.dump('TASKS')}
@@ -54,7 +54,7 @@ class record_handler(object):
         return
 
 
-class PostProcessingScan(object):
+class PostProcessingScan:
     ''' Scheduled task to automatically scan directory for movie to process '''
     @staticmethod
     def create():
@@ -141,7 +141,7 @@ class PostProcessingScan(object):
         core.sql.delete_postprocessed_paths()
 
 
-class AutoSearch(object):
+class AutoSearch:
     ''' Scheduled task to automatically run search/snatch methods '''
     @staticmethod
     def create():
@@ -154,7 +154,7 @@ class AutoSearch(object):
         SchedulerPlugin.ScheduledTask(hr, min, interval, search.search_all, auto_start=True, name='Movie Search')
 
 
-class MetadataUpdate(object):
+class MetadataUpdate:
     ''' Scheduled task to automatically run metadata updater '''
 
     @staticmethod
@@ -204,7 +204,7 @@ class MetadataUpdate(object):
         return
 
 
-class AutoUpdateCheck(object):
+class AutoUpdateCheck:
     ''' Scheduled task to automatically check git for updates and install '''
     @staticmethod
     def create():
@@ -244,7 +244,7 @@ class AutoUpdateCheck(object):
         return core.updater.update_check(install=install)
 
 
-class ImdbRssSync(object):
+class ImdbRssSync:
     ''' Scheduled task to automatically sync IMDB watchlists '''
     @staticmethod
     def create():
@@ -263,7 +263,7 @@ class ImdbRssSync(object):
         return
 
 
-class PopularMoviesSync(object):
+class PopularMoviesSync:
     ''' Scheduled task to automatically sync PopularMovies list '''
     @staticmethod
     def create():
@@ -281,7 +281,7 @@ class PopularMoviesSync(object):
         return
 
 
-class TraktSync(object):
+class TraktSync:
     ''' Scheduled task to automatically sync selected Trakt lists '''
 
     @staticmethod
@@ -306,7 +306,7 @@ class TraktSync(object):
         return
 
 
-class FileScan(object):
+class FileScan:
     ''' Scheduled task to automatically clear missing finished files '''
 
     @staticmethod
@@ -322,7 +322,7 @@ class FileScan(object):
         return
 
 
-class PostprocessedPathsScan(object):
+class PostprocessedPathsScan:
     ''' Scheduled task to automatically clear deleted postprocessed paths from database '''
 
     @staticmethod
@@ -346,7 +346,7 @@ class PostprocessedPathsScan(object):
 
         return
 
-class FinishedTorrentsCheck(object):
+class FinishedTorrentsCheck:
     ''' Scheduled task to automatically delete finished torrents from downloader '''
 
     @staticmethod

@@ -10,7 +10,7 @@ _k = Comparisons._k
 logging = logging.getLogger(__name__)
 
 
-class TheMovieDatabase(object):
+class TheMovieDatabase:
     tokens = 30             # int initial amount of tokens for TMDB rate limiting
     last_token_fill = time()      # float epoch time of last token fill
     token_capacity = 30     # int max number of tokens. TMDB allows more, but artificially restricting the hit rate doesn't hurt
@@ -316,7 +316,7 @@ class TheMovieDatabase(object):
             return []
 
 
-class YouTube(object):
+class YouTube:
 
     @staticmethod
     def trailer(title_date):
@@ -331,7 +331,7 @@ class YouTube(object):
 
         logging.info('Getting trailer url from YouTube for {}'.format(title_date))
 
-        search_term = Url.normalize((title_date + '+trailer'))
+        search_term = Url.normalize(title_date + '+trailer')
 
         url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&q={}&maxResults=1&key={}'.format(search_term, _k(b'youtube'))
 
@@ -349,7 +349,7 @@ class YouTube(object):
         return ''
 
 
-class Poster(object):
+class Poster:
 
     folder = os.path.join(core.POSTER_DIR)
 

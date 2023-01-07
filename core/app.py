@@ -14,7 +14,7 @@ import time
 locale_dir = os.path.join(core.PROG_PATH, 'locale')
 
 
-class App(object):
+class App:
 
     @cherrypy.expose
     def __init__(self):

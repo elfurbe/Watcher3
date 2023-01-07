@@ -23,7 +23,7 @@ class Errors():
     tmdb_not_found = _('Unable to find {} on TheMovieDB.')
 
 
-class Ajax(object):
+class Ajax:
     ''' These are all the methods that handle ajax post/get requests from the browser.
 
     Except in special circumstances, all should return an 'ajax-style response', which is a
@@ -564,7 +564,7 @@ class Ajax(object):
 
         logging.info('Dumping log file {} to text.'.format(logfile))
 
-        with open(os.path.join(core.LOG_DIR, logfile), 'r') as f:
+        with open(os.path.join(core.LOG_DIR, logfile)) as f:
             log_text = ''.join(reversed(f.readlines()))
 
         return log_text

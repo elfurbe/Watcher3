@@ -14,7 +14,7 @@ from core.downloaders import PutIO
 logging = logging.getLogger(__name__)
 
 
-class Postprocessing(object):
+class Postprocessing:
 
     def __init__(self):
         shutil.copystat = self.null

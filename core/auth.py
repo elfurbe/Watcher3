@@ -79,7 +79,7 @@ def require(*conditions):
     return decorate
 
 
-class AuthController(object):
+class AuthController:
 
     _cp_config = {
         'auth.require': None

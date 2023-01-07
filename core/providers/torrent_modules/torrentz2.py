@@ -1,7 +1,7 @@
 import core
 import logging
 from core.helpers import Url
-from xml.etree.cElementTree import fromstring
+from xml.etree.ElementTree import fromstring
 from xmljson import yahoo
 logging = logging.getLogger(__name__)
 

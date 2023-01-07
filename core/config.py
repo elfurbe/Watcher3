@@ -2,7 +2,7 @@ import json
 import random
 import datetime
 import core
-import collections
+import collections.abc
 import re
 from core import localization
 from core.helpers import Comparisons
@@ -47,7 +47,7 @@ def new_config():
     Returns dict of newly created config
     '''
 
-    with open(base_file, 'r') as f:
+    with open(base_file) as f:
         config = json.load(f)
 
     config['Search']['searchtimehr'] = random.randint(0, 23)
@@ -112,9 +112,9 @@ def merge_new_options():
 
     new_config = {}
 
-    with open(base_file, 'r') as f:
+    with open(base_file) as f:
         base_config = json.load(f)
-    with open(core.CONF_FILE, 'r') as f:
+    with open(core.CONF_FILE) as f:
         config = json.load(f)
 
     new_config = _merge(base_config, config)
@@ -167,7 +167,7 @@ def _merge(d, u):
     Returns dict
     '''
     for k, v in u.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, collections.abc.Mapping):
             r = _merge(d.get(k, {}), v)
             d[k] = r
         else:
@@ -208,7 +208,7 @@ def load(config=None):
     '''
 
     if not config:
-        with open(core.CONF_FILE, 'r') as f:
+        with open(core.CONF_FILE) as f:
             config = json.load(f)
 
     repl = config['Postprocessing']['replaceillegal']

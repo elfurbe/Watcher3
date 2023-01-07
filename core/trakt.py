@@ -5,7 +5,7 @@ import json
 import core
 import datetime
 from core import searcher
-import xml.etree.cElementTree as ET
+import xml.etree.ElementTree as ET
 import re
 
 import logging

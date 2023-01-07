@@ -1,4 +1,4 @@
-from xml.etree.cElementTree import fromstring
+from xml.etree.ElementTree import fromstring
 from xmljson import yahoo
 import logging
 import re
@@ -10,7 +10,7 @@ from core import proxy
 from gettext import gettext as _
 
 
-class NewzNabProvider(object):
+class NewzNabProvider:
     '''
     Base class for NewzNab and TorzNab providers.
     Methods:

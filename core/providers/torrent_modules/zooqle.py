@@ -1,6 +1,6 @@
 import logging
 import datetime
-import xml.etree.cElementTree as ET
+import xml.etree.ElementTree as ET
 import core
 from core.helpers import Url
 

@@ -59,7 +59,7 @@ data = {'apikey': watcherapi, 'guid': ''}
 
 # get guid and nzo_id from sab history, since sab < 2.0 doesn't send with args:
 name = urlquote(sys.argv[3], safe='')
-url = u'http://{}:{}/sabnzbd/api?apikey={}&mode=history&output=json&search={}'.format(sabhost, sabport, sabkey, name)
+url = 'http://{}:{}/sabnzbd/api?apikey={}&mode=history&output=json&search={}'.format(sabhost, sabport, sabkey, name)
 
 req = request(url, headers={'User-Agent': 'Mozilla/5.0'})
 response = urlopen(req, timeout=60, context=ctx).read().decode('utf-8')
@@ -75,14 +75,14 @@ for dl in slots:
 data['path'] = sys.argv[1]
 
 if status == 0:
-    print(u'Sending {} to Watcher as Complete.'.format(name))
+    print('Sending {} to Watcher as Complete.'.format(name))
     data['mode'] = 'complete'
 else:
-    print(u'Sending {} to Watcher as Failed.'.format(name))
+    print('Sending {} to Watcher as Failed.'.format(name))
     data['mode'] = 'failed'
 
 # Send info
-url = u'{}/postprocessing/'.format(watcheraddress)
+url = '{}/postprocessing/'.format(watcheraddress)
 post_data = urlencode(data).encode('ascii')
 
 req = request(url, post_data, headers={'User-Agent': 'Mozilla/5.0'})

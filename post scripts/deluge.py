@@ -55,13 +55,13 @@ data = {}
 data['apikey'] = watcherapi
 
 data['name'] = sys.argv[2]
-data['path'] = u'{}/{}'.format(download_dir, sys.argv[2])
+data['path'] = '{}/{}'.format(download_dir, sys.argv[2])
 data['downloadid'] = sys.argv[1]
 data['guid'] = sys.argv[1]
 data['mode'] = 'complete'
 
 # Send info
-url = u'{}/postprocessing/'.format(watcheraddress)
+url = '{}/postprocessing/'.format(watcheraddress)
 post_data = urlencode(data).encode('ascii')
 
 request = request(url, post_data, headers={'User-Agent': 'Mozilla/5.0'})

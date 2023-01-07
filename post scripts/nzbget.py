@@ -71,14 +71,14 @@ data['downloadid'] = os.environ['NZBPP_NZBID']
 data['path'] = os.environ['NZBPP_DIRECTORY']
 
 if os.environ['NZBPP_TOTALSTATUS'] == 'SUCCESS':
-    print(u'Sending {} to Watcher as Complete.'.format(name))
+    print('Sending {} to Watcher as Complete.'.format(name))
     data['mode'] = 'complete'
 else:
-    print(u'Sending {} to Watcher as Failed.'.format(name))
+    print('Sending {} to Watcher as Failed.'.format(name))
     data['mode'] = 'failed'
 
 # Send info
-url = u'{}/postprocessing/'.format(watcheraddress)
+url = '{}/postprocessing/'.format(watcheraddress)
 post_data = urlencode(data).encode('ascii')
 
 request = request(url, post_data, headers={'User-Agent': 'Mozilla/5.0'})

@@ -8,7 +8,7 @@
 # Add api information to conf:
 
 watcherapi = 'APIKEY'
-watcheraddress = u'http://localhost:9090/'
+watcheraddress = 'http://localhost:9090/'
 label = 'Watcher'
 verifyssl = True    # may need to change to False if using self-signed ssl cert
 
@@ -58,7 +58,7 @@ data['guid'] = downloadid
 data['mode'] = 'complete'
 
 # Send info
-url = u'{}/postprocessing/'.format(watcheraddress)
+url = '{}/postprocessing/'.format(watcheraddress)
 post_data = urlencode(data).encode('ascii')
 
 request = request(url, post_data, headers={'User-Agent': 'Mozilla/5.0'})

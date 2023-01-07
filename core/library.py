@@ -18,7 +18,7 @@ from gettext import gettext as _
 logging = logging.getLogger(__name__)
 
 
-class ImportDirectory(object):
+class ImportDirectory:
 
     @staticmethod
     def scan_dir(directory, minsize=500, recursive=True):
@@ -82,7 +82,7 @@ class ImportDirectory(object):
         return files
 
 
-class ImportKodiLibrary(object):
+class ImportKodiLibrary:
 
     @staticmethod
     def get_movies(url):
@@ -173,7 +173,7 @@ class ImportKodiLibrary(object):
         return {'response': True, 'movies': movies}
 
 
-class ImportPlexLibrary(object):
+class ImportPlexLibrary:
     ''' Several of these methods are not currently used due to Plex's
     api being less than ideal.
     '''
@@ -275,7 +275,7 @@ class ImportPlexLibrary(object):
         return {'response': True, 'complete': parsed_movies, 'incomplete': incomplete}
 
 
-class ImportCPLibrary(object):
+class ImportCPLibrary:
 
     @staticmethod
     def get_movies(url):
@@ -385,7 +385,7 @@ class ImportCPLibrary(object):
         return {'response': True, 'movies': movies}
 
 
-class Metadata(object):
+class Metadata:
     ''' Methods for gathering/preparing metadata for movies
     '''
 
@@ -778,7 +778,7 @@ class Metadata(object):
         return {'response': True, 'message': 'Metadata updated.'}
 
 
-class Manage(object):
+class Manage:
     ''' Methods to manipulate status of movies or search results in database
     '''
 
@@ -927,7 +927,7 @@ class Manage(object):
             return response
 
         if not movie.get('category', None) and movie.get('finished_file', None):
-            movie['category'] = Metadata.get_category_from_path((movie['finished_file']))
+            movie['category'] = Metadata.get_category_from_path(movie['finished_file'])
         movie.setdefault('quality', 'Default')
         movie.setdefault('category', 'Default')
         movie.setdefault('status', 'Waiting')
@@ -1209,7 +1209,7 @@ class Manage(object):
             else:
                 added_dates[movie['added_date'][:-3]] += 1
 
-            score = round((float(movie['score']) * 2)) / 2
+            score = round(float(movie['score']) * 2) / 2
             if score not in scores:
                 scores[score] = 1
             else:
